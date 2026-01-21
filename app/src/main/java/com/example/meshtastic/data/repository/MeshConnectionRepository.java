@@ -237,9 +237,8 @@ public class MeshConnectionRepository {
             n.setBatteryLevel(ni.getDeviceMetrics().getBatteryLevel());
         }
         if (ni.hasHopsAway()) n.setHopsAway(ni.getHopsAway());
-        if (ni.hasChannel()) n.setChannel(ni.getChannel());
+        if (ni.getChannel() != 0) n.setChannel(ni.getChannel());
         n.setViaMqtt(ni.getViaMqtt());
         return n;
     }
 }
-
