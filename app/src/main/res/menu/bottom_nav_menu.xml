@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_connection"
+        android:title="Подключение"
+        android:icon="@android:drawable/stat_sys_data_bluetooth" />
+    <item
+        android:id="@+id/nav_status"
+        android:title="Статус"
+        android:icon="@android:drawable/ic_menu_info_details" />
+    <item
+        android:id="@+id/nav_nodes"
+        android:title="Узлы"
+        android:icon="@android:drawable/ic_menu_mapmode" />
+    <item
+        android:id="@+id/nav_settings"
+        android:title="Настройки"
+        android:icon="@android:drawable/ic_menu_manage" />
+</menu>

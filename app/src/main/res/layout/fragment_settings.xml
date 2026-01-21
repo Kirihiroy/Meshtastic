@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Настройки сети и безопасности"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Имя узла (Node Name)" />
+
+        <EditText
+            android:id="@+id/node_name_edit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="например: TEAM-1"
+            android:inputType="textPersonName"
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Регион (например: EU_868 / RU_864 / US_915)" />
+
+        <EditText
+            android:id="@+id/region_edit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="например: EU_868"
+            android:inputType="text"
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Имя канала (Channel)" />
+
+        <EditText
+            android:id="@+id/channel_name_edit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="например: GROUP"
+            android:inputType="text"
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ключ канала / PSK (строка или base64)" />
+
+        <EditText
+            android:id="@+id/psk_edit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="секретный ключ"
+            android:inputType="textPassword"
+            android:layout_marginBottom="16dp" />
+
+        <Button
+            android:id="@+id/save_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Сохранить"
+            android:textSize="18sp"
+            android:padding="16dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Важно: сейчас настройки сохраняются локально. Следующий шаг — применить их на устройство по BLE через Protobuf (ToRadio/Admin)."
+            android:textSize="12sp"
+            android:textColor="@android:color/darker_gray"
+            android:paddingTop="16dp" />
+
+    </LinearLayout>
+</ScrollView>
