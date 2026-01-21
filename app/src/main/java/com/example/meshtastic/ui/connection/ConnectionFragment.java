@@ -242,9 +242,15 @@ public class ConnectionFragment extends Fragment {
     }
 
     private void sendTest() {
-        // Простой тест: отправляем строку "ping" (многие прошивки проигнорируют, но проверим write)
-        boolean ok = repo.write("ping".getBytes());
-        Toast.makeText(requireContext(), ok ? "Отправлено (ping)" : "Не удалось отправить", Toast.LENGTH_SHORT).show();
+        int nonce = (int) (System.currentTimeMillis() & 0x7fffffff);
+        boolean ok = repo.sendToRadio(
+                org.meshtastic.proto.MeshProtos.ToRadio.newBuilder()
+                        .setHeartbeat(org.meshtastic.proto.MeshProtos.Heartbeat.newBuilder()
+                                .setNonce(nonce)
+                                .build())
+                        .build()
+        );
+        Toast.makeText(requireContext(), ok ? "Отправлено (heartbeat)" : "Не удалось отправить", Toast.LENGTH_SHORT).show();
     }
 
     private static String toHex(byte[] data) {
