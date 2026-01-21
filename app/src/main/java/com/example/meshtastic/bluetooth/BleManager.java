@@ -17,6 +17,7 @@ import android.os.Build;
 import android.util.Log;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.UUID;
 
 /**
@@ -70,6 +71,10 @@ public class BleManager {
     private ScanListener scanListener;
     private ConnectionListener connectionListener;
     private DataListener dataListener;
+    private byte[] pendingWrite;
+    private int pendingOffset;
+    private int lastChunkSize;
+    private int mtu = 23;
 
     public BleManager(Context context) {
         this.context = context.getApplicationContext();
@@ -115,13 +120,23 @@ public class BleManager {
             bluetoothGatt.close();
             bluetoothGatt = null;
         }
+        pendingWrite = null;
+        pendingOffset = 0;
+        lastChunkSize = 0;
     }
 
     public boolean write(byte[] data) {
         if (bluetoothGatt == null || rxCharacteristic == null) return false;
-        rxCharacteristic.setValue(data);
-        rxCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
-        return bluetoothGatt.writeCharacteristic(rxCharacteristic);
+        if (pendingWrite != null) return false;
+        pendingWrite = data;
+        pendingOffset = 0;
+        boolean started = writeNextChunk();
+        if (!started) {
+            pendingWrite = null;
+            pendingOffset = 0;
+            lastChunkSize = 0;
+        }
+        return started;
     }
 
     public boolean writeString(String text) {
@@ -155,6 +170,7 @@ public class BleManager {
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 Log.d(TAG, "BLE connected, discovering services");
+                gatt.requestMtu(517);
                 gatt.discoverServices();
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 Log.d(TAG, "BLE disconnected");
@@ -231,6 +247,42 @@ public class BleManager {
             if (status != BluetoothGatt.GATT_SUCCESS && connectionListener != null) {
                 connectionListener.onError("Write failed: " + status);
             }
+            if (status != BluetoothGatt.GATT_SUCCESS) {
+                pendingWrite = null;
+                pendingOffset = 0;
+                lastChunkSize = 0;
+                return;
+            }
+            if (pendingWrite != null) {
+                pendingOffset += lastChunkSize;
+                if (pendingOffset >= pendingWrite.length) {
+                    pendingWrite = null;
+                    lastChunkSize = 0;
+                } else {
+                    writeNextChunk();
+                }
+            }
+        }
+
+        @Override
+        public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
+            super.onMtuChanged(gatt, mtu, status);
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                BleManager.this.mtu = mtu;
+                Log.d(TAG, "MTU updated: " + mtu);
+            }
         }
     };
+
+    private boolean writeNextChunk() {
+        if (bluetoothGatt == null || rxCharacteristic == null || pendingWrite == null) return false;
+        int maxPayload = Math.max(20, mtu - 3);
+        int remaining = pendingWrite.length - pendingOffset;
+        int size = Math.min(maxPayload, remaining);
+        byte[] chunk = Arrays.copyOfRange(pendingWrite, pendingOffset, pendingOffset + size);
+        lastChunkSize = size;
+        rxCharacteristic.setValue(chunk);
+        rxCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+        return bluetoothGatt.writeCharacteristic(rxCharacteristic);
+    }
 }

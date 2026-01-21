@@ -9,6 +9,7 @@ import androidx.lifecycle.MutableLiveData;
 import com.example.meshtastic.bluetooth.BleManager;
 import com.example.meshtastic.data.model.NodeInfo;
 import com.example.meshtastic.data.parser.MeshProtoParser;
+import com.example.meshtastic.data.parser.ProtobufStreamParser;
 
 import org.meshtastic.proto.MeshProtos;
 
@@ -56,6 +57,8 @@ public class MeshConnectionRepository {
     private final Map<Long, NodeInfo> nodeMap = new ConcurrentHashMap<>();
 
     private final Set<String> seenAddresses = new HashSet<>();
+    private final ProtobufStreamParser fromRadioParser = new ProtobufStreamParser();
+    private int wantConfigId = 1;
 
     private MeshConnectionRepository(Context context) {
         bleManager = new BleManager(context);
@@ -153,6 +156,7 @@ public class MeshConnectionRepository {
             public void onConnected() {
                 state.postValue(State.CONNECTED);
                 statusText.postValue("Подключено: " + safeName(device));
+                requestConfig();
             }
 
             @Override
@@ -182,6 +186,13 @@ public class MeshConnectionRepository {
         return bleManager.write(data);
     }
 
+    public boolean sendToRadio(MeshProtos.ToRadio msg) {
+        if (msg == null) return false;
+        byte[] payload = msg.toByteArray();
+        byte[] framed = frameLengthDelimited(payload);
+        return bleManager.write(framed);
+    }
+
     private static String safeName(BluetoothDevice d) {
         String n = d.getName();
         return (n == null || n.isEmpty()) ? d.getAddress() : n;
@@ -189,6 +200,12 @@ public class MeshConnectionRepository {
 
     private void handleFromRadio(byte[] data) {
         if (data == null || data.length == 0) return;
+        for (byte[] frame : fromRadioParser.append(data)) {
+            handleFromRadioFrame(frame);
+        }
+    }
+
+    private void handleFromRadioFrame(byte[] data) {
         MeshProtos.FromRadio msg;
         try {
             msg = MeshProtos.FromRadio.parseFrom(data);
@@ -217,6 +234,38 @@ public class MeshConnectionRepository {
         }
     }
 
+    private void requestConfig() {
+        int configId = wantConfigId++;
+        MeshProtos.ToRadio msg = MeshProtos.ToRadio.newBuilder()
+                .setWantConfigId(configId)
+                .build();
+        sendToRadio(msg);
+    }
+
+    private static byte[] frameLengthDelimited(byte[] payload) {
+        if (payload == null) return new byte[0];
+        int length = payload.length;
+        byte[] header = encodeVarint32(length);
+        byte[] framed = new byte[header.length + payload.length];
+        System.arraycopy(header, 0, framed, 0, header.length);
+        System.arraycopy(payload, 0, framed, header.length, payload.length);
+        return framed;
+    }
+
+    private static byte[] encodeVarint32(int value) {
+        byte[] tmp = new byte[5];
+        int idx = 0;
+        int v = value;
+        while ((v & 0xFFFFFF80) != 0L) {
+            tmp[idx++] = (byte) ((v & 0x7F) | 0x80);
+            v >>>= 7;
+        }
+        tmp[idx++] = (byte) (v & 0x7F);
+        byte[] out = new byte[idx];
+        System.arraycopy(tmp, 0, out, 0, idx);
+        return out;
+    }
+
     private NodeInfo convertNode(MeshProtos.NodeInfo ni) {
         NodeInfo n = new NodeInfo();
         n.setNodeNum(ni.getNum() & 0xffffffffL);
@@ -237,9 +286,8 @@ public class MeshConnectionRepository {
             n.setBatteryLevel(ni.getDeviceMetrics().getBatteryLevel());
         }
         if (ni.hasHopsAway()) n.setHopsAway(ni.getHopsAway());
-        if (ni.hasChannel()) n.setChannel(ni.getChannel());
+        if (ni.getChannel() != 0) n.setChannel(ni.getChannel());
         n.setViaMqtt(ni.getViaMqtt());
         return n;
     }
 }
-
