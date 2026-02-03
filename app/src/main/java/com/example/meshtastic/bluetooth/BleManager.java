@@ -27,7 +27,8 @@ import java.util.UUID;
  * - Meshtastic BLE Client API (чаще всего на устройствах типа Heltec)
  *   Service: 6ba1b218-15a8-461f-9fa8-5dcae273eafd
  *   toRadio (write): f75c76d2-129e-4dad-a1dd-7866124401e7
- *   fromRadio (notify): 2c55e69e-4993-11ed-b878-0242ac120002
+ *   fromRadio (read): 2c55e69e-4993-11ed-b878-0242ac120002
+ *   fromNum (notify): ed9da18c-a800-4f66-a670-aa7547e34453
  *
  * - Nordic UART Service (NUS) (встречается реже, оставлен как fallback)
  *   Service: 6e400001-b5a3-f393-e0a9-e50e24dcca9e
@@ -40,6 +41,7 @@ public class BleManager {
     public static final UUID MESHTASTIC_SERVICE_UUID = UUID.fromString("6ba1b218-15a8-461f-9fa8-5dcae273eafd");
     public static final UUID MESHTASTIC_TORADIO_UUID = UUID.fromString("f75c76d2-129e-4dad-a1dd-7866124401e7");
     public static final UUID MESHTASTIC_FROMRADIO_UUID = UUID.fromString("2c55e69e-4993-11ed-b878-0242ac120002");
+    public static final UUID MESHTASTIC_FROMNUM_UUID = UUID.fromString("ed9da18c-a800-4f66-a670-aa7547e34453");
 
     public static final UUID NUS_SERVICE_UUID = UUID.fromString("6e400001-b5a3-f393-e0a9-e50e24dcca9e");
     public static final UUID NUS_RX_UUID = UUID.fromString("6e400002-b5a3-f393-e0a9-e50e24dcca9e");
@@ -68,9 +70,13 @@ public class BleManager {
     private BluetoothGatt bluetoothGatt;
     private BluetoothGattCharacteristic txCharacteristic;
     private BluetoothGattCharacteristic rxCharacteristic;
+    private BluetoothGattCharacteristic fromRadioCharacteristic;
+    private BluetoothGattCharacteristic fromNumCharacteristic;
     private ScanListener scanListener;
     private ConnectionListener connectionListener;
     private DataListener dataListener;
+    private boolean readingFromRadio;
+    private boolean waitingForCccdWrite;
     private byte[] pendingWrite;
     private int pendingOffset;
     private int lastChunkSize;
@@ -120,6 +126,10 @@ public class BleManager {
             bluetoothGatt.close();
             bluetoothGatt = null;
         }
+        fromRadioCharacteristic = null;
+        fromNumCharacteristic = null;
+        readingFromRadio = false;
+        waitingForCccdWrite = false;
         pendingWrite = null;
         pendingOffset = 0;
         lastChunkSize = 0;
@@ -130,7 +140,13 @@ public class BleManager {
         if (pendingWrite != null) return false;
         pendingWrite = data;
         pendingOffset = 0;
-        return writeNextChunk();
+        boolean started = writeNextChunk();
+        if (!started) {
+            pendingWrite = null;
+            pendingOffset = 0;
+            lastChunkSize = 0;
+        }
+        return started;
     }
 
     public boolean writeString(String text) {
@@ -138,7 +154,9 @@ public class BleManager {
     }
 
     public boolean isConnected() {
-        return bluetoothGatt != null && txCharacteristic != null && rxCharacteristic != null;
+        return bluetoothGatt != null
+                && rxCharacteristic != null
+                && (txCharacteristic != null || fromNumCharacteristic != null);
     }
 
     private final ScanCallback scanCallback = new ScanCallback() {
@@ -164,7 +182,7 @@ public class BleManager {
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 Log.d(TAG, "BLE connected, discovering services");
-                gatt.requestMtu(517);
+                gatt.requestMtu(512);
                 gatt.discoverServices();
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 Log.d(TAG, "BLE disconnected");
@@ -192,7 +210,8 @@ public class BleManager {
             if (meshtasticService != null) {
                 service = meshtasticService;
                 rxCharacteristic = service.getCharacteristic(MESHTASTIC_TORADIO_UUID); // write
-                txCharacteristic = service.getCharacteristic(MESHTASTIC_FROMRADIO_UUID); // notify
+                fromRadioCharacteristic = service.getCharacteristic(MESHTASTIC_FROMRADIO_UUID); // read
+                fromNumCharacteristic = service.getCharacteristic(MESHTASTIC_FROMNUM_UUID); // notify
                 Log.d(TAG, "Using Meshtastic BLE service");
             } else {
                 // 2) Fallback: Nordic UART Service
@@ -211,27 +230,74 @@ public class BleManager {
                 }
                 return;
             }
-            if (rxCharacteristic == null || txCharacteristic == null) {
+            if (rxCharacteristic == null || (txCharacteristic == null && fromNumCharacteristic == null)) {
                 if (connectionListener != null) connectionListener.onError("TX/RX characteristics not found");
                 return;
             }
 
-            // enable notifications on TX
-            gatt.setCharacteristicNotification(txCharacteristic, true);
-            BluetoothGattDescriptor descriptor = txCharacteristic.getDescriptor(CLIENT_CHAR_CFG);
+            BluetoothGattCharacteristic notifyCharacteristic = txCharacteristic;
+            if (fromNumCharacteristic != null) {
+                notifyCharacteristic = fromNumCharacteristic;
+            }
+
+            // enable notifications
+            gatt.setCharacteristicNotification(notifyCharacteristic, true);
+            BluetoothGattDescriptor descriptor = notifyCharacteristic.getDescriptor(CLIENT_CHAR_CFG);
             if (descriptor != null) {
                 descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
-                gatt.writeDescriptor(descriptor);
+                waitingForCccdWrite = gatt.writeDescriptor(descriptor);
+                if (!waitingForCccdWrite && connectionListener != null) {
+                    connectionListener.onError("CCCD write failed");
+                }
+            } else {
+                if (connectionListener != null) connectionListener.onConnected();
             }
-            if (connectionListener != null) connectionListener.onConnected();
         }
 
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             UUID uuid = characteristic.getUuid();
-            if (MESHTASTIC_FROMRADIO_UUID.equals(uuid) || NUS_TX_UUID.equals(uuid)) {
+            if (MESHTASTIC_FROMNUM_UUID.equals(uuid)) {
+                readFromRadio();
+                return;
+            }
+            if (NUS_TX_UUID.equals(uuid)) {
                 byte[] data = characteristic.getValue();
                 if (dataListener != null) dataListener.onDataReceived(data);
+            }
+        }
+
+        @Override
+        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            super.onCharacteristicRead(gatt, characteristic, status);
+            if (status != BluetoothGatt.GATT_SUCCESS) {
+                readingFromRadio = false;
+                return;
+            }
+            if (MESHTASTIC_FROMRADIO_UUID.equals(characteristic.getUuid())) {
+                byte[] data = characteristic.getValue();
+                if (data != null && data.length > 0) {
+                    if (dataListener != null) dataListener.onDataReceived(data);
+                    if (!gatt.readCharacteristic(characteristic)) {
+                        readingFromRadio = false;
+                    }
+                    return;
+                }
+                readingFromRadio = false;
+            }
+        }
+
+        @Override
+        public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
+            super.onDescriptorWrite(gatt, descriptor, status);
+            if (!waitingForCccdWrite) {
+                return;
+            }
+            waitingForCccdWrite = false;
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                if (connectionListener != null) connectionListener.onConnected();
+            } else {
+                if (connectionListener != null) connectionListener.onError("CCCD write failed: " + status);
             }
         }
 
@@ -241,7 +307,13 @@ public class BleManager {
             if (status != BluetoothGatt.GATT_SUCCESS && connectionListener != null) {
                 connectionListener.onError("Write failed: " + status);
             }
-            if (status == BluetoothGatt.GATT_SUCCESS && pendingWrite != null) {
+            if (status != BluetoothGatt.GATT_SUCCESS) {
+                pendingWrite = null;
+                pendingOffset = 0;
+                lastChunkSize = 0;
+                return;
+            }
+            if (pendingWrite != null) {
                 pendingOffset += lastChunkSize;
                 if (pendingOffset >= pendingWrite.length) {
                     pendingWrite = null;
@@ -261,6 +333,12 @@ public class BleManager {
             }
         }
     };
+
+    private void readFromRadio() {
+        if (bluetoothGatt == null || fromRadioCharacteristic == null) return;
+        if (readingFromRadio) return;
+        readingFromRadio = bluetoothGatt.readCharacteristic(fromRadioCharacteristic);
+    }
 
     private boolean writeNextChunk() {
         if (bluetoothGatt == null || rxCharacteristic == null || pendingWrite == null) return false;

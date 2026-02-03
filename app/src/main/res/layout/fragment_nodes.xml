@@ -1,26 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:background="@color/app_background"
     android:padding="12dp">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Узлы сети"
-        android:textSize="22sp"
+        android:text="Карта узлов"
+        android:textSize="24sp"
         android:textStyle="bold"
-        android:gravity="center"
-        android:layout_marginBottom="8dp" />
+        android:textColor="@color/app_on_surface"
+        android:layout_marginBottom="4dp" />
 
     <TextView
-        android:id="@+id/empty_text"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Нет узлов. Подключитесь и дождитесь пакетов FromRadio."
-        android:padding="8dp"
-        android:visibility="gone" />
+        android:text="Сводка по найденным участникам сети"
+        android:textSize="13sp"
+        android:textColor="@color/app_on_surface_muted"
+        android:layout_marginBottom="12dp" />
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        app:cardBackgroundColor="@color/app_surface"
+        app:cardCornerRadius="14dp"
+        app:strokeColor="@color/app_outline"
+        app:strokeWidth="1dp">
+
+        <TextView
+            android:id="@+id/empty_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Нет узлов. Подключитесь и дождитесь пакетов FromRadio."
+            android:textColor="@color/app_on_surface_muted"
+            android:padding="12dp"
+            android:visibility="gone" />
+    </com.google.android.material.card.MaterialCardView>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/nodes_recycler"
@@ -28,6 +49,7 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:clipToPadding="false"
-        android:paddingTop="4dp" />
+        android:paddingTop="4dp"
+        android:paddingBottom="8dp" />
 
 </LinearLayout>

@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/app_background"
     android:padding="16dp">
 
     <LinearLayout
@@ -12,78 +14,131 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Настройки сети и безопасности"
-            android:textSize="22sp"
+            android:text="Панель конфигурации"
+            android:textSize="26sp"
             android:textStyle="bold"
-            android:gravity="center"
+            android:textColor="@color/app_on_surface"
+            android:layout_marginBottom="6dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Сеть, безопасность и идентификация узла"
+            android:textSize="14sp"
+            android:textColor="@color/app_on_surface_muted"
             android:layout_marginBottom="16dp" />
 
-        <TextView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Имя узла (Node Name)" />
+            android:layout_marginBottom="16dp"
+            app:cardBackgroundColor="@color/app_surface"
+            app:cardCornerRadius="16dp"
+            app:strokeColor="@color/app_outline"
+            app:strokeWidth="1dp">
 
-        <EditText
-            android:id="@+id/node_name_edit"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="например: TEAM-1"
-            android:inputType="textPersonName"
-            android:layout_marginBottom="12dp" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Регион (например: EU_868 / RU_864 / US_915)" />
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Имя узла"
+                    android:layout_marginBottom="12dp"
+                    app:boxBackgroundMode="outline"
+                    app:boxStrokeColor="@color/app_outline"
+                    app:hintTextColor="@color/app_on_surface_muted">
 
-        <EditText
-            android:id="@+id/region_edit"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="например: EU_868"
-            android:inputType="text"
-            android:layout_marginBottom="12dp" />
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/node_name_edit"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPersonName"
+                        android:textColor="@color/app_on_surface"
+                        android:textColorHint="@color/app_on_surface_muted"
+                        android:hint="например: TEAM-1" />
+                </com.google.android.material.textfield.TextInputLayout>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Имя канала (Channel)" />
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Регион"
+                    android:layout_marginBottom="12dp"
+                    app:boxBackgroundMode="outline"
+                    app:boxStrokeColor="@color/app_outline"
+                    app:hintTextColor="@color/app_on_surface_muted">
 
-        <EditText
-            android:id="@+id/channel_name_edit"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="например: GROUP"
-            android:inputType="text"
-            android:layout_marginBottom="12dp" />
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/region_edit"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text"
+                        android:textColor="@color/app_on_surface"
+                        android:textColorHint="@color/app_on_surface_muted"
+                        android:hint="например: EU_868" />
+                </com.google.android.material.textfield.TextInputLayout>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Ключ канала / PSK (строка или base64)" />
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Имя канала"
+                    android:layout_marginBottom="12dp"
+                    app:boxBackgroundMode="outline"
+                    app:boxStrokeColor="@color/app_outline"
+                    app:hintTextColor="@color/app_on_surface_muted">
 
-        <EditText
-            android:id="@+id/psk_edit"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="секретный ключ"
-            android:inputType="textPassword"
-            android:layout_marginBottom="16dp" />
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/channel_name_edit"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text"
+                        android:textColor="@color/app_on_surface"
+                        android:textColorHint="@color/app_on_surface_muted"
+                        android:hint="например: GROUP" />
+                </com.google.android.material.textfield.TextInputLayout>
 
-        <Button
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Ключ канала / PSK"
+                    android:layout_marginBottom="4dp"
+                    app:boxBackgroundMode="outline"
+                    app:boxStrokeColor="@color/app_outline"
+                    app:hintTextColor="@color/app_on_surface_muted">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/psk_edit"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPassword"
+                        android:textColor="@color/app_on_surface"
+                        android:textColorHint="@color/app_on_surface_muted"
+                        android:hint="секретный ключ" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/save_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Сохранить"
-            android:textSize="18sp"
-            android:padding="16dp" />
+            android:textSize="16sp"
+            android:textColor="@color/app_on_primary"
+            app:backgroundTint="@color/app_primary"
+            app:cornerRadius="16dp"
+            android:padding="14dp" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Важно: сейчас настройки сохраняются локально. Следующий шаг — применить их на устройство по BLE через Protobuf (ToRadio/Admin)."
             android:textSize="12sp"
-            android:textColor="@android:color/darker_gray"
+            android:textColor="@color/app_on_surface_muted"
             android:paddingTop="16dp" />
 
     </LinearLayout>
