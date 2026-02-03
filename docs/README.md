@@ -10,10 +10,19 @@
 - `ARCHITECTURE.md` — структура модулей и поток данных
 - `CONFIGURATION.md` — настройки сети и безопасности (PSK)
 - `TROUBLESHOOTING.md` — типовые проблемы и решения
+- `SCREENSHOTS.md` — шаблон для скриншотов и описаний экранов
+- `GLOSSARY.md` — термины и сокращения
+- `FAQ.md` — частые вопросы
+- `CHANGELOG.md` — изменения по версиям
+
+## Как читать
+
+1. Начните с `SETUP.md` и `USAGE.md`.
+2. Для понимания внутренней логики смотрите `ARCHITECTURE.md`.
+3. При проблемах — `TROUBLESHOOTING.md`.
 
 ## Связанные материалы в корне проекта
 
 - `QUICK_START.md`
 - `PROJECT_PLAN.md`
 - `NEXT_STEPS.md`
-
