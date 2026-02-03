@@ -242,15 +242,15 @@ public class ConnectionFragment extends Fragment {
     }
 
     private void sendTest() {
-        int nonce = (int) (System.currentTimeMillis() & 0x7fffffff);
+        // Запрос конфигурации - устройство ВСЕГДА отвечает на want_config_id
+        // Heartbeat НЕ вызывает ответа (он только для поддержания serial-соединения)
+        int configId = (int) (System.currentTimeMillis() & 0x7fffffff);
         boolean ok = repo.sendToRadio(
                 org.meshtastic.proto.MeshProtos.ToRadio.newBuilder()
-                        .setHeartbeat(org.meshtastic.proto.MeshProtos.Heartbeat.newBuilder()
-                                .setNonce(nonce)
-                                .build())
+                        .setWantConfigId(configId)
                         .build()
         );
-        Toast.makeText(requireContext(), ok ? "Отправлено (heartbeat)" : "Не удалось отправить", Toast.LENGTH_SHORT).show();
+        Toast.makeText(requireContext(), ok ? "Запрос конфигурации отправлен" : "Не удалось отправить", Toast.LENGTH_SHORT).show();
     }
 
     private static String toHex(byte[] data) {
