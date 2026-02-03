@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/app_background"
     android:padding="16dp">
 
     <LinearLayout
@@ -14,31 +15,51 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Подключение к Meshtastic"
-            android:textSize="24sp"
+            android:text="Контроль подключения"
+            android:textSize="26sp"
             android:textStyle="bold"
-            android:gravity="center"
-            android:layout_marginBottom="24dp" />
+            android:textColor="@color/app_on_surface"
+            android:layout_marginBottom="4dp" />
 
-        <!-- Статус Bluetooth -->
         <TextView
-            android:id="@+id/status_text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Проверка состояния Bluetooth..."
-            android:textSize="16sp"
-            android:padding="12dp"
-            android:background="@android:color/darker_gray"
-            android:layout_marginBottom="16dp" />
+            android:text="Поиск устройства, канал связи и диагностика"
+            android:textSize="14sp"
+            android:textColor="@color/app_on_surface_muted"
+            android:layout_marginBottom="20dp" />
+
+        <!-- Статус Bluetooth -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardBackgroundColor="@color/app_surface"
+            app:cardCornerRadius="16dp"
+            app:strokeColor="@color/app_outline"
+            app:strokeWidth="1dp">
+
+            <TextView
+                android:id="@+id/status_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Проверка состояния Bluetooth..."
+                android:textSize="16sp"
+                android:textColor="@color/app_on_surface"
+                android:padding="16dp" />
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Кнопка поиска устройств -->
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/scan_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Поиск устройств"
-            android:textSize="18sp"
-            android:padding="16dp"
+            android:textSize="16sp"
+            android:textColor="@color/app_on_primary"
+            app:backgroundTint="@color/app_primary"
+            app:cornerRadius="16dp"
+            android:padding="14dp"
             android:layout_marginBottom="16dp" />
 
         <!-- Прогресс бар -->
@@ -51,51 +72,79 @@
             android:layout_marginBottom="16dp" />
 
         <!-- Список устройств -->
-        <TextView
-            android:id="@+id/device_list_text"
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Нажмите 'Поиск устройств' для начала"
-            android:textSize="14sp"
-            android:padding="12dp"
-            android:background="@android:color/white"
-            android:minHeight="200dp"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginBottom="16dp"
+            app:cardBackgroundColor="@color/app_surface"
+            app:cardCornerRadius="16dp"
+            app:strokeColor="@color/app_outline"
+            app:strokeWidth="1dp">
+
+            <TextView
+                android:id="@+id/device_list_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Нажмите «Поиск устройств» для начала"
+                android:textSize="14sp"
+                android:textColor="@color/app_on_surface"
+                android:padding="16dp"
+                android:minHeight="180dp" />
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Последние принятые байты -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Последние входящие байты (hex):"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:textColor="@color/app_on_surface"
+            android:layout_marginBottom="8dp" />
 
-        <TextView
-            android:id="@+id/last_rx_text"
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="72dp"
-            android:text="—"
-            android:padding="12dp"
-            android:background="@android:color/white"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginBottom="16dp"
+            app:cardBackgroundColor="@color/app_surface_alt"
+            app:cardCornerRadius="14dp"
+            app:strokeColor="@color/app_outline"
+            app:strokeWidth="1dp">
+
+            <TextView
+                android:id="@+id/last_rx_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="72dp"
+                android:text="—"
+                android:textColor="@color/app_on_surface"
+                android:padding="14dp" />
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Кнопка подключения -->
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/connect_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Подключиться"
-            android:textSize="18sp"
-            android:padding="16dp"
+            android:textSize="16sp"
+            android:textColor="@color/app_on_primary"
+            app:backgroundTint="@color/app_secondary"
+            app:cornerRadius="16dp"
+            android:padding="14dp"
             android:enabled="false" />
 
         <!-- Отправить тестовый пакет -->
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/send_test_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Отправить тест (ping)"
-            android:textSize="16sp"
+            android:textSize="15sp"
+            android:textColor="@color/app_on_surface"
+            app:backgroundTint="@color/app_surface"
+            app:strokeColor="@color/app_outline"
+            app:strokeWidth="1dp"
+            app:cornerRadius="16dp"
             android:padding="14dp"
             android:layout_marginTop="12dp"
             android:enabled="false" />
@@ -104,9 +153,9 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Инструкция:\n1. Убедитесь, что устройство Meshtastic включено\n2. Сопрягите его с телефоном в настройках Bluetooth\n3. Нажмите 'Поиск устройств'\n4. Выберите устройство и нажмите 'Подключиться'"
+            android:text="Подсказка:\n• Включите Meshtastic и держите устройство рядом.\n• Убедитесь, что Bluetooth и геолокация активны.\n• Запустите поиск, затем подключитесь к найденному узлу."
             android:textSize="12sp"
-            android:textColor="@android:color/darker_gray"
+            android:textColor="@color/app_on_surface_muted"
             android:padding="12dp"
             android:layout_marginTop="24dp" />
 
