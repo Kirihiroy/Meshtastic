@@ -306,6 +306,30 @@ public class BleManager {
             if (status != BluetoothGatt.GATT_SUCCESS && connectionListener != null) {
                 connectionListener.onError("Write failed: " + status);
             }
+            if (status != BluetoothGatt.GATT_SUCCESS) {
+                pendingWrite = null;
+                pendingOffset = 0;
+                lastChunkSize = 0;
+                return;
+            }
+            if (pendingWrite != null) {
+                pendingOffset += lastChunkSize;
+                if (pendingOffset >= pendingWrite.length) {
+                    pendingWrite = null;
+                    lastChunkSize = 0;
+                } else {
+                    writeNextChunk();
+                }
+            }
+        }
+
+        @Override
+        public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
+            super.onMtuChanged(gatt, mtu, status);
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                BleManager.this.mtu = mtu;
+                Log.d(TAG, "MTU updated: " + mtu);
+            }
         }
 
         @Override
