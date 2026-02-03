@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/app_background"
     android:padding="16dp">
 
     <LinearLayout
@@ -12,80 +14,129 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Статус устройства / сети"
-            android:textSize="22sp"
+            android:text="Панель состояния"
+            android:textSize="26sp"
             android:textStyle="bold"
-            android:gravity="center"
+            android:textColor="@color/app_on_surface"
+            android:layout_marginBottom="6dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Сигналы, пакеты и события соединения"
+            android:textSize="14sp"
+            android:textColor="@color/app_on_surface_muted"
             android:layout_marginBottom="16dp" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Состояние:"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:textColor="@color/app_on_surface" />
 
-        <TextView
-            android:id="@+id/state_text"
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="—"
-            android:padding="12dp"
             android:layout_marginBottom="12dp"
-            android:background="@android:color/darker_gray" />
+            app:cardBackgroundColor="@color/app_surface"
+            app:cardCornerRadius="14dp"
+            app:strokeColor="@color/app_outline"
+            app:strokeWidth="1dp">
+
+            <TextView
+                android:id="@+id/state_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="—"
+                android:textColor="@color/app_on_surface"
+                android:padding="14dp" />
+        </com.google.android.material.card.MaterialCardView>
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Сообщение:"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:textColor="@color/app_on_surface" />
 
-        <TextView
-            android:id="@+id/status_text"
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="—"
-            android:padding="12dp"
             android:layout_marginBottom="12dp"
-            android:background="@android:color/darker_gray" />
+            app:cardBackgroundColor="@color/app_surface"
+            app:cardCornerRadius="14dp"
+            app:strokeColor="@color/app_outline"
+            app:strokeWidth="1dp">
+
+            <TextView
+                android:id="@+id/status_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="—"
+                android:textColor="@color/app_on_surface"
+                android:padding="14dp" />
+        </com.google.android.material.card.MaterialCardView>
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Последние входящие байты (hex):"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:textColor="@color/app_on_surface"
+            android:layout_marginBottom="8dp" />
 
-        <TextView
-            android:id="@+id/last_rx_text"
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="—"
-            android:minHeight="96dp"
-            android:padding="12dp"
-            android:background="@android:color/white" />
+            app:cardBackgroundColor="@color/app_surface_alt"
+            app:cardCornerRadius="14dp"
+            app:strokeColor="@color/app_outline"
+            app:strokeWidth="1dp">
+
+            <TextView
+                android:id="@+id/last_rx_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="—"
+                android:minHeight="96dp"
+                android:textColor="@color/app_on_surface"
+                android:padding="14dp" />
+        </com.google.android.material.card.MaterialCardView>
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Расшифрованное FromRadio сообщение:"
             android:textStyle="bold"
+            android:textColor="@color/app_on_surface"
             android:layout_marginTop="16dp" />
 
-        <TextView
-            android:id="@+id/last_parsed_text"
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="—"
-            android:minHeight="64dp"
-            android:padding="12dp"
-            android:background="@android:color/white"
-            android:layout_marginBottom="8dp" />
+            android:layout_marginBottom="8dp"
+            app:cardBackgroundColor="@color/app_surface_alt"
+            app:cardCornerRadius="14dp"
+            app:strokeColor="@color/app_outline"
+            app:strokeWidth="1dp">
+
+            <TextView
+                android:id="@+id/last_parsed_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="—"
+                android:minHeight="64dp"
+                android:textColor="@color/app_on_surface"
+                android:padding="14dp" />
+        </com.google.android.material.card.MaterialCardView>
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Данные берутся из protobuf FromRadio: my_info, node_info, config, packet и др."
             android:textSize="12sp"
-            android:textColor="@android:color/darker_gray"
+            android:textColor="@color/app_on_surface_muted"
             android:paddingTop="16dp" />
 
     </LinearLayout>
