@@ -1,5 +1,6 @@
 package com.example.meshtastic.bluetooth;
 
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
@@ -11,486 +12,667 @@ import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
+import android.bluetooth.le.ScanSettings;
 import android.content.Context;
-import android.os.Build;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Looper;
+import android.os.ParcelUuid;
 import android.util.Log;
 
-import java.nio.charset.StandardCharsets;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayDeque;
-import java.util.Arrays;
-import java.util.Deque;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
- * BLE менеджер для Meshtastic.
+ * Meshtastic BLE transport:
+ * - ToRadio: client writes protobuf bytes
+ * - FromNum: notify/indicate counter (signals pending packets)
+ * - FromRadio: client reads repeatedly until it returns empty
  *
- * Поддерживает 2 варианта протокола:
- * - Meshtastic BLE Client API (чаще всего на устройствах типа Heltec)
- *   Service: 6ba1b218-15a8-461f-9fa8-5dcae273eafd
- *   toRadio (write): f75c76d2-129e-4dad-a1dd-7866124401e7
- *   fromRadio (read): 2c55e69e-4993-11ed-b878-0242ac120002
- *   fromNum (notify): ed9da18c-a800-4f66-a670-aa7547e34453
- *
- * - Nordic UART Service (NUS) (встречается реже, оставлен как fallback)
- *   Service: 6e400001-b5a3-f393-e0a9-e50e24dcca9e
- *   RX (write): 6e400002-b5a3-f393-e0a9-e50e24dcca9e
- *   TX (notify): 6e400003-b5a3-f393-e0a9-e50e24dcca9e
+ * Key point: you MUST drain FromRadio (READ ops), otherwise you'll never see inbound packets.
  */
 public class BleManager {
+
     private static final String TAG = "BleManager";
 
-    public static final UUID MESHTASTIC_SERVICE_UUID = UUID.fromString("6ba1b218-15a8-461f-9fa8-5dcae273eafd");
-    public static final UUID MESHTASTIC_TORADIO_UUID = UUID.fromString("f75c76d2-129e-4dad-a1dd-7866124401e7");
-    public static final UUID MESHTASTIC_FROMRADIO_UUID = UUID.fromString("2c55e69e-4993-11ed-b878-0242ac120002");
-    public static final UUID MESHTASTIC_FROMNUM_UUID = UUID.fromString("ed9da18c-a800-4f66-a670-aa7547e34453");
+    // Meshtastic BLE service + characteristics (as used by Meshtastic firmware)
+    private static final UUID UUID_MESHTASTIC_SERVICE = UUID.fromString("6ba1b218-15a8-461f-9fa8-5dcae273eafd");
+    private static final UUID UUID_TO_RADIO           = UUID.fromString("f75c76d2-129e-4dad-a1dd-7866124401e7");
+    private static final UUID UUID_FROM_NUM           = UUID.fromString("ed9da18c-a800-4f66-a670-aa7547e34453");
+    // Common Meshtastic FromRadio UUID in newer firmware (HackMD/protocol docs)
+    private static final UUID UUID_FROM_RADIO         = UUID.fromString("2c55e69e-4993-11ed-b878-0242ac120002");
+    private static final UUID UUID_CCCD               = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
 
-    public static final UUID NUS_SERVICE_UUID = UUID.fromString("6e400001-b5a3-f393-e0a9-e50e24dcca9e");
-    public static final UUID NUS_RX_UUID = UUID.fromString("6e400002-b5a3-f393-e0a9-e50e24dcca9e");
-    public static final UUID NUS_TX_UUID = UUID.fromString("6e400003-b5a3-f393-e0a9-e50e24dcca9e");
-    private static final UUID CLIENT_CHAR_CFG = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
+    // Timeouts (ms)
+    private static final long OP_TIMEOUT_MS = 8000;
+
+    // Fallback poll interval if notifications/indications don't fire (ms)
+    private static final long FROM_NUM_POLL_MS = 1500;
 
     public interface ScanListener {
-        void onDeviceFound(BluetoothDevice device);
-        void onScanFailed(int errorCode);
+        void onDeviceFound(BluetoothDevice device, int rssi);
     }
 
     public interface ConnectionListener {
         void onConnected();
         void onDisconnected();
-        void onError(String message);
+        void onError(String msg);
     }
 
-    public interface DataListener {
-        void onDataReceived(byte[] data);
+    public interface BytesListener {
+        void onBytes(byte[] data);
     }
 
-    private final Context context;
-    private final BluetoothAdapter adapter;
-    private final BluetoothLeScanner scanner;
+    private final Context appContext;
+    private boolean readyNotified = false;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
-    private BluetoothGatt bluetoothGatt;
-    private BluetoothGattCharacteristic txCharacteristic;
-    private BluetoothGattCharacteristic rxCharacteristic;
-    private BluetoothGattCharacteristic fromRadioCharacteristic;
-    private BluetoothGattCharacteristic fromNumCharacteristic;
-    private ScanListener scanListener;
+    private final HandlerThread gattThread = new HandlerThread("MeshtasticBleGatt");
+    private final Handler gattHandler;
+
+    private BluetoothAdapter adapter;
+    private BluetoothLeScanner scanner;
+
+    private ScanCallback scanCallback;
+
+    private BluetoothGatt gatt;
+    private BluetoothDevice device;
+
+    private BluetoothGattCharacteristic toRadioChar;
+    private BluetoothGattCharacteristic fromRadioChar;
+    private BluetoothGattCharacteristic fromNumChar;
+
     private ConnectionListener connectionListener;
-    private DataListener dataListener;
-    private boolean waitingForCccdWrite;
-    private final GattOpQueue opQueue = new GattOpQueue();
-    private int mtu = 23;
+    private BytesListener bytesListener;
 
-    public BleManager(Context context) {
-        this.context = context.getApplicationContext();
-        BluetoothManager manager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
-        adapter = manager != null ? manager.getAdapter() : null;
-        scanner = adapter != null ? adapter.getBluetoothLeScanner() : null;
+    private int mtu = 23;
+    private boolean connected = false;
+
+    // --- Operation queue (required: only one GATT op in-flight at a time) ---
+    private enum OpType { WRITE_CHAR, READ_CHAR, WRITE_DESC }
+
+    private static class GattOp {
+        final OpType type;
+        final BluetoothGattCharacteristic ch;
+        final BluetoothGattDescriptor desc;
+        final byte[] value;
+
+        GattOp(OpType t, BluetoothGattCharacteristic ch, BluetoothGattDescriptor desc, byte[] value) {
+            this.type = t;
+            this.ch = ch;
+            this.desc = desc;
+            this.value = value;
+        }
+
+        @Override public String toString() {
+            switch (type) {
+                case WRITE_DESC: return "WRITE_DESC desc=" + (desc != null ? desc.getUuid() : null);
+                case READ_CHAR:  return "READ_CHAR  char=" + (ch != null ? ch.getUuid() : null);
+                case WRITE_CHAR: return "WRITE_CHAR char=" + (ch != null ? ch.getUuid() : null) + " len=" + (value != null ? value.length : 0);
+            }
+            return type.name();
+        }
+    }
+
+    private final ArrayDeque<GattOp> opQueue = new ArrayDeque<>();
+    private GattOp inFlight = null;
+    private final Runnable opTimeoutRunnable = new Runnable() {
+        @Override public void run() {
+            gattHandler.post(() -> {
+                if (inFlight != null) {
+                    Log.w(TAG, "GattOp timeout: " + inFlight);
+                    // Clear the stuck op and move on; if the stack is truly wedged, later ops will also timeout.
+                    inFlight = null;
+                    processNextOp();
+                }
+            });
+        }
+    };
+
+    // --- FromRadio draining state ---
+    private boolean drainingFromRadio = false;
+    private long lastFromNum = -1;
+
+    // --- Poll fallback ---
+    private boolean fromNumPollEnabled = false;
+    private final Runnable fromNumPollRunnable = new Runnable() {
+        @Override public void run() {
+            gattHandler.post(() -> {
+                if (!fromNumPollEnabled || gatt == null || fromNumChar == null) return;
+                enqueueRead(fromNumChar);
+                mainHandler.postDelayed(fromNumPollRunnable, FROM_NUM_POLL_MS);
+            });
+        }
+    };
+
+    public BleManager(Context ctx) {
+        this.appContext = ctx.getApplicationContext();
+        gattThread.start();
+        gattHandler = new Handler(gattThread.getLooper());
+
+        BluetoothManager bm = (BluetoothManager) appContext.getSystemService(Context.BLUETOOTH_SERVICE);
+        adapter = bm != null ? bm.getAdapter() : null;
+        scanner = (adapter != null) ? adapter.getBluetoothLeScanner() : null;
     }
 
     public boolean isBluetoothEnabled() {
         return adapter != null && adapter.isEnabled();
     }
 
+    // -------------------- Scan --------------------
+
+    @SuppressLint("MissingPermission")
     public void startScan(ScanListener listener) {
-        this.scanListener = listener;
         if (scanner == null) {
-            if (listener != null) listener.onScanFailed(-1);
+            Log.w(TAG, "BLE scanner unavailable");
             return;
         }
-        scanner.startScan(scanCallback);
+        stopScan();
+
+        List<ScanFilter> filters = new ArrayList<>();
+        filters.add(new ScanFilter.Builder()
+                .setServiceUuid(new ParcelUuid(UUID_MESHTASTIC_SERVICE))
+                .build());
+
+        ScanSettings settings = new ScanSettings.Builder()
+                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                .build();
+
+        scanCallback = new ScanCallback() {
+            @Override public void onScanResult(int callbackType, ScanResult result) {
+                if (result == null || result.getDevice() == null) return;
+                if (listener != null) listener.onDeviceFound(result.getDevice(), result.getRssi());
+            }
+
+            @Override public void onBatchScanResults(List<ScanResult> results) {
+                if (results == null) return;
+                for (ScanResult r : results) onScanResult(ScanSettings.CALLBACK_TYPE_ALL_MATCHES, r);
+            }
+
+            @Override public void onScanFailed(int errorCode) {
+                Log.w(TAG, "scan failed: " + errorCode);
+            }
+        };
+
+        scanner.startScan(filters, settings, scanCallback);
     }
 
+    @SuppressLint("MissingPermission")
     public void stopScan() {
-        if (scanner != null) {
-            scanner.stopScan(scanCallback);
+        if (scanner != null && scanCallback != null) {
+            try { scanner.stopScan(scanCallback); } catch (Exception ignored) {}
         }
+        scanCallback = null;
     }
 
+    // -------------------- Connect / Disconnect --------------------
+
+    @SuppressLint("MissingPermission")
     public void connect(BluetoothDevice device,
                         ConnectionListener connectionListener,
-                        DataListener dataListener) {
+                        BytesListener bytesListener) {
+        this.device = device;
         this.connectionListener = connectionListener;
-        this.dataListener = dataListener;
-        if (device == null) {
-            if (connectionListener != null) connectionListener.onError("Устройство не выбрано");
-            return;
-        }
-        bluetoothGatt = device.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE);
+        this.bytesListener = bytesListener;
+
+        gattHandler.post(() -> {
+            cleanupGattNoCallback();
+
+            if (device == null) {
+                notifyError("connect(): device == null");
+                return;
+            }
+            Log.d(TAG, "Connecting to " + device.getAddress());
+            // TRANSPORT_LE is API 23+, safe for modern apps.
+            gatt = device.connectGatt(appContext, false, gattCallback, BluetoothDevice.TRANSPORT_LE);
+        });
     }
 
+    @SuppressLint("MissingPermission")
     public void disconnect() {
-        if (bluetoothGatt != null) {
-            bluetoothGatt.disconnect();
-            bluetoothGatt.close();
-            bluetoothGatt = null;
-        }
-        fromRadioCharacteristic = null;
-        fromNumCharacteristic = null;
-        waitingForCccdWrite = false;
+        gattHandler.post(() -> {
+            fromNumPollEnabled = false;
+            mainHandler.removeCallbacks(fromNumPollRunnable);
+
+            drainingFromRadio = false;
+            opQueue.clear();
+            inFlight = null;
+            mainHandler.removeCallbacks(opTimeoutRunnable);
+
+            if (gatt != null) {
+                try { gatt.disconnect(); } catch (Exception ignored) {}
+                try { gatt.close(); } catch (Exception ignored) {}
+            }
+            gatt = null;
+            connected = false;
+            readyNotified = false;
+            toRadioChar = null;
+            fromRadioChar = null;
+            fromNumChar = null;
+
+            if (connectionListener != null) {
+                mainHandler.post(() -> connectionListener.onDisconnected());
+            }
+        });
+    }
+
+    private void cleanupGattNoCallback() {
+        fromNumPollEnabled = false;
+        mainHandler.removeCallbacks(fromNumPollRunnable);
+
+        drainingFromRadio = false;
         opQueue.clear();
-    }
+        inFlight = null;
+        mainHandler.removeCallbacks(opTimeoutRunnable);
 
-    public boolean write(byte[] data) {
-        if (bluetoothGatt == null || rxCharacteristic == null) return false;
-        if (data == null || data.length == 0) return false;
-        int maxPayload = Math.max(20, mtu - 3);
-        int offset = 0;
-        while (offset < data.length) {
-            int size = Math.min(maxPayload, data.length - offset);
-            byte[] chunk = Arrays.copyOfRange(data, offset, offset + size);
-            opQueue.enqueueWrite(rxCharacteristic, chunk, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
-            offset += size;
+        if (gatt != null) {
+            try { gatt.disconnect(); } catch (Exception ignored) {}
+            try { gatt.close(); } catch (Exception ignored) {}
         }
-        opQueue.kick();
-        return true;
+        gatt = null;
+        connected = false;
+        toRadioChar = null;
+        fromRadioChar = null;
+        fromNumChar = null;
     }
 
-    public boolean writeString(String text) {
-        return write(text.getBytes(StandardCharsets.UTF_8));
-    }
+    // -------------------- Write to radio --------------------
 
-    public boolean isConnected() {
-        return bluetoothGatt != null
-                && rxCharacteristic != null
-                && (txCharacteristic != null || fromNumCharacteristic != null);
-    }
-
-    private final ScanCallback scanCallback = new ScanCallback() {
-        @Override
-        public void onScanResult(int callbackType, ScanResult result) {
-            super.onScanResult(callbackType, result);
-            if (scanListener != null) {
-                scanListener.onDeviceFound(result.getDevice());
+    /**
+     * Write a complete ToRadio protobuf message as bytes.
+     * NOTE: Meshtastic firmware expects the full protobuf in a single write.
+     */
+    public void write(byte[] toRadioProtobufBytes) {
+        if (toRadioProtobufBytes == null) return;
+        gattHandler.post(() -> {
+            if (gatt == null || !connected || toRadioChar == null) {
+                Log.w(TAG, "write(): not connected/ready yet");
+                return;
             }
-        }
+            enqueueWrite(toRadioChar, toRadioProtobufBytes);
+            // After sending, proactively try to drain in case the radio already queued a reply.
+            drainFromRadio();
+        });
+    }
 
-        @Override
-        public void onScanFailed(int errorCode) {
-            super.onScanFailed(errorCode);
-            if (scanListener != null) {
-                scanListener.onScanFailed(errorCode);
-            }
-        }
-    };
+    // -------------------- GATT callback --------------------
 
     private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
+
         @Override
+        @SuppressLint("MissingPermission")
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-            if (newState == BluetoothProfile.STATE_CONNECTED) {
-                Log.d(TAG, "BLE connected, discovering services");
-                gatt.requestMtu(512);
-                gatt.discoverServices();
-            } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                Log.d(TAG, "BLE disconnected");
-                if (connectionListener != null) connectionListener.onDisconnected();
-                disconnect();
-            }
+            gattHandler.post(() -> {
+                if (status != BluetoothGatt.GATT_SUCCESS) {
+                    Log.w(TAG, "onConnectionStateChange status=" + status + " newState=" + newState);
+                }
+
+                if (newState == BluetoothProfile.STATE_CONNECTED) {
+                    connected = true;
+                    mtu = 23;
+                    Log.d(TAG, "BLE connected, requesting MTU");
+                    try { gatt.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH); } catch (Exception ignored) {}
+
+                    boolean started = false;
+                    try { started = gatt.requestMtu(512); } catch (Exception ignored) {}
+                    Log.d(TAG, "requestMtu(512) started=" + started);
+                    if (!started) {
+                        // Some stacks may refuse; proceed anyway.
+                        boolean ds = gatt.discoverServices();
+                        Log.d(TAG, "discoverServices started=" + ds);
+                    }
+
+                    if (connectionListener != null) {
+                        mainHandler.post(() -> connectionListener.onConnected());
+                    }
+                } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                    Log.d(TAG, "BLE disconnected");
+                    cleanupGattNoCallback();
+                    if (connectionListener != null) {
+                        mainHandler.post(() -> connectionListener.onDisconnected());
+                    }
+                }
+            });
+        }
+
+        @Override
+        @SuppressLint("MissingPermission")
+        public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
+            gattHandler.post(() -> {
+                Log.d(TAG, "onMtuChanged mtu=" + mtu + " status=" + status);
+                if (status == BluetoothGatt.GATT_SUCCESS && mtu > 0) {
+                    BleManager.this.mtu = mtu;
+                    Log.d(TAG, "MTU updated: " + mtu);
+                }
+                boolean started = gatt.discoverServices();
+                Log.d(TAG, "discoverServices started=" + started);
+            });
         }
 
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-            if (status != BluetoothGatt.GATT_SUCCESS) {
-                if (connectionListener != null) connectionListener.onError("Services discovery failed: " + status);
-                return;
-            }
+            gattHandler.post(() -> {
+                Log.d(TAG, "onServicesDiscovered status=" + status);
+                if (status != BluetoothGatt.GATT_SUCCESS) {
+                    notifyError("discoverServices failed status=" + status);
+                    return;
+                }
 
-            // Лог всех сервисов: очень помогает понять, что реально отдает прошивка
-            for (BluetoothGattService s : gatt.getServices()) {
-                Log.d(TAG, "Service found: " + s.getUuid());
-            }
+                BluetoothGattService svc = gatt.getService(UUID_MESHTASTIC_SERVICE);
+                if (svc == null) {
+                    notifyError("Meshtastic BLE service not found");
+                    return;
+                }
 
-            BluetoothGattService service = null;
-
-            // 1) Предпочтительно: Meshtastic BLE Client API
-            BluetoothGattService meshtasticService = gatt.getService(MESHTASTIC_SERVICE_UUID);
-            if (meshtasticService != null) {
-                service = meshtasticService;
-                rxCharacteristic = service.getCharacteristic(MESHTASTIC_TORADIO_UUID); // write
-                fromRadioCharacteristic = service.getCharacteristic(MESHTASTIC_FROMRADIO_UUID); // read
-                fromNumCharacteristic = service.getCharacteristic(MESHTASTIC_FROMNUM_UUID); // notify
-                txCharacteristic = null;
                 Log.d(TAG, "Using Meshtastic BLE service");
-            } else {
-                // 2) Fallback: Nordic UART Service
-                BluetoothGattService nusService = gatt.getService(NUS_SERVICE_UUID);
-                if (nusService != null) {
-                    service = nusService;
-                    rxCharacteristic = service.getCharacteristic(NUS_RX_UUID);
-                    txCharacteristic = service.getCharacteristic(NUS_TX_UUID);
-                    Log.d(TAG, "Using Nordic UART (NUS) service");
+
+                // Debug: list characteristics
+                for (BluetoothGattCharacteristic c : svc.getCharacteristics()) {
+                    Log.d(TAG, "Char: " + c.getUuid() + " props=" + c.getProperties());
                 }
-            }
 
-            if (service == null) {
-                if (connectionListener != null) {
-                    connectionListener.onError("Meshtastic/NUS service not found. Посмотри UUID сервисов в Logcat (tag BleManager) или через nRF Connect.");
+
+                toRadioChar = svc.getCharacteristic(UUID_TO_RADIO);
+                fromNumChar = svc.getCharacteristic(UUID_FROM_NUM);
+                fromRadioChar = svc.getCharacteristic(UUID_FROM_RADIO);
+
+
+
+                if (fromRadioChar == null) {
+                    // Fallback: choose a readable characteristic within this service that is not ToRadio or FromNum.
+                    for (BluetoothGattCharacteristic c : svc.getCharacteristics()) {
+                        UUID u = c.getUuid();
+                        if (u == null) continue;
+                        if (u.equals(UUID_TO_RADIO) || u.equals(UUID_FROM_NUM)) continue;
+                        int p = c.getProperties();
+                        if ((p & BluetoothGattCharacteristic.PROPERTY_READ) != 0) {
+                            fromRadioChar = c;
+                            Log.w(TAG, "FromRadio UUID fallback picked: " + u);
+                            break;
+                        }
+                    }
                 }
-                return;
-            }
-            if (rxCharacteristic == null || (txCharacteristic == null && fromNumCharacteristic == null)) {
-                if (connectionListener != null) connectionListener.onError("TX/RX characteristics not found");
-                return;
-            }
+                if (toRadioChar == null) notifyError("ToRadio characteristic not found");
+                if (fromNumChar == null) notifyError("FromNum characteristic not found");
+                if (fromRadioChar == null) notifyError("FromRadio characteristic not found");
 
-            BluetoothGattCharacteristic notifyCharacteristic = txCharacteristic;
-            if (fromNumCharacteristic != null) {
-                notifyCharacteristic = fromNumCharacteristic;
-            }
-
-            // enable notifications
-            gatt.setCharacteristicNotification(notifyCharacteristic, true);
-            BluetoothGattDescriptor descriptor = notifyCharacteristic.getDescriptor(CLIENT_CHAR_CFG);
-            if (descriptor != null) {
-                waitingForCccdWrite = true;
-                opQueue.enqueueDescriptorWrite(descriptor, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
-                opQueue.kick();
-            } else {
-                if (connectionListener != null) connectionListener.onConnected();
-            }
-        }
-
-        @Override
-        public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
-            UUID uuid = characteristic.getUuid();
-            if (MESHTASTIC_FROMNUM_UUID.equals(uuid)) {
-                drainFromRadio();
-                return;
-            }
-            if (NUS_TX_UUID.equals(uuid)) {
-                byte[] data = characteristic.getValue();
-                if (dataListener != null) dataListener.onDataReceived(data);
-            }
-        }
-
-        @Override
-        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-            super.onCharacteristicRead(gatt, characteristic, status);
-            Log.d(TAG, "onCharacteristicRead status=" + status + " uuid=" + characteristic.getUuid());
-            opQueue.completeActive(status == BluetoothGatt.GATT_SUCCESS);
-            if (status != BluetoothGatt.GATT_SUCCESS) return;
-            if (MESHTASTIC_FROMRADIO_UUID.equals(characteristic.getUuid())) {
-                byte[] data = characteristic.getValue();
-                Log.d(TAG, "FromRadio len=" + (data == null ? 0 : data.length));
-                if (data != null && data.length > 0) {
-                    if (dataListener != null) dataListener.onDataReceived(data);
-                    opQueue.enqueueRead(fromRadioCharacteristic);
-                    opQueue.kick();
+                if (toRadioChar == null || fromNumChar == null || fromRadioChar == null) {
+                    return;
                 }
-            }
+
+                // Enable notifications/indications on FromNum.
+                enableFromNumNotifications();
+            });
         }
 
         @Override
         public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-            super.onDescriptorWrite(gatt, descriptor, status);
-            Log.d(TAG, "onDescriptorWrite status=" + status + " uuid=" + descriptor.getUuid());
-            opQueue.completeActive(status == BluetoothGatt.GATT_SUCCESS);
-            if (!waitingForCccdWrite) {
-                return;
-            }
-            waitingForCccdWrite = false;
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-                if (connectionListener != null) connectionListener.onConnected();
-            } else {
-                if (connectionListener != null) connectionListener.onError("CCCD write failed: " + status);
-            }
+            gattHandler.post(() -> {
+                Log.d(TAG, "onDescriptorWrite status=" + status + " uuid=" + (descriptor != null ? descriptor.getUuid() : null));
+                finishOp();
+
+                // After CCCD is enabled, start polling fallback and drain immediately.
+                if (descriptor != null && UUID_CCCD.equals(descriptor.getUuid())) {
+                    startFromNumPollFallback();
+                    // First drain immediately (there may already be messages queued)
+                    drainFromRadio();
+                    // Also read FromNum once to capture a baseline counter
+                    enqueueRead(fromNumChar);
+                }
+            });
         }
 
         @Override
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-            super.onCharacteristicWrite(gatt, characteristic, status);
-            Log.d(TAG, "onCharacteristicWrite status=" + status + " uuid=" + characteristic.getUuid());
-            opQueue.completeActive(status == BluetoothGatt.GATT_SUCCESS);
-            if (status != BluetoothGatt.GATT_SUCCESS && connectionListener != null) {
-                connectionListener.onError("Write failed: " + status);
-            }
-            if (status != BluetoothGatt.GATT_SUCCESS) {
-                pendingWrite = null;
-                pendingOffset = 0;
-                lastChunkSize = 0;
-                return;
-            }
-            if (pendingWrite != null) {
-                pendingOffset += lastChunkSize;
-                if (pendingOffset >= pendingWrite.length) {
-                    pendingWrite = null;
-                    lastChunkSize = 0;
-                } else {
-                    writeNextChunk();
+            gattHandler.post(() -> {
+                Log.d(TAG, "onCharacteristicWrite status=" + status + " uuid=" + (characteristic != null ? characteristic.getUuid() : null));
+                finishOp();
+                // After any write, try draining (radio responses can arrive quickly)
+                drainFromRadio();
+            });
+        }
+
+        @Override
+        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            gattHandler.post(() -> {
+                UUID uuid = (characteristic != null) ? characteristic.getUuid() : null;
+                byte[] value = (characteristic != null) ? characteristic.getValue() : null;
+
+                // Log reads lightly; FromRadio can be noisy.
+                if (uuid != null && !UUID_FROM_RADIO.equals(uuid)) {
+                    Log.d(TAG, "onCharacteristicRead status=" + status + " uuid=" + uuid + " len=" + (value != null ? value.length : 0));
                 }
-            }
+
+                finishOp();
+
+                if (status != BluetoothGatt.GATT_SUCCESS || uuid == null) {
+                    return;
+                }
+
+                if (UUID_FROM_NUM.equals(uuid)) {
+                    handleFromNumValue(value);
+                    return;
+                }
+
+                if (UUID_FROM_RADIO.equals(uuid)) {
+                    handleFromRadioValue(value);
+                }
+            });
         }
 
         @Override
-        public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
-            super.onMtuChanged(gatt, mtu, status);
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-                BleManager.this.mtu = mtu;
-                Log.d(TAG, "MTU updated: " + mtu);
-            }
-        }
+        public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
+            gattHandler.post(() -> {
+                UUID uuid = (characteristic != null) ? characteristic.getUuid() : null;
+                byte[] value = (characteristic != null) ? characteristic.getValue() : null;
 
-        @Override
-        public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
-            super.onMtuChanged(gatt, mtu, status);
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-                BleManager.this.mtu = mtu;
-                Log.d(TAG, "MTU updated: " + mtu);
-            }
+                if (uuid == null) return;
+
+                if (UUID_FROM_NUM.equals(uuid)) {
+                    Log.d(TAG, "onCharacteristicChanged FromNum len=" + (value != null ? value.length : 0));
+                    handleFromNumValue(value);
+                }
+            });
         }
     };
 
+    // -------------------- Notification + drain logic --------------------
+
+    @SuppressLint("MissingPermission")
+    private void enableFromNumNotifications() {
+        if (gatt == null || fromNumChar == null) return;
+
+        boolean setOk = false;
+        try {
+            setOk = gatt.setCharacteristicNotification(fromNumChar, true);
+        } catch (Exception e) {
+            Log.w(TAG, "setCharacteristicNotification failed", e);
+        }
+        Log.d(TAG, "setCharacteristicNotification(fromNum) ok=" + setOk);
+
+        BluetoothGattDescriptor cccd = fromNumChar.getDescriptor(UUID_CCCD);
+        if (cccd == null) {
+            notifyError("CCCD not found on FromNum");
+            return;
+        }
+
+        // Some firmwares expose INDICATE instead of NOTIFY; be robust.
+        final int props = fromNumChar.getProperties();
+        final boolean indicate = (props & BluetoothGattCharacteristic.PROPERTY_INDICATE) != 0;
+        final byte[] enableValue = indicate
+                ? BluetoothGattDescriptor.ENABLE_INDICATION_VALUE
+                : BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE;
+
+        enqueueWriteDesc(cccd, enableValue);
+    }
+
+    private void handleFromNumValue(byte[] value) {
+        long v = decodeUint32LittleEndian(value);
+        if (v < 0) return;
+
+        if (lastFromNum < 0) {
+            lastFromNum = v;
+            Log.d(TAG, "FromNum baseline=" + lastFromNum);
+            // Even if baseline, try draining once (some radios won't bump counter until after you drain)
+            drainFromRadio();
+            return;
+        }
+
+        if (v != lastFromNum) {
+            Log.d(TAG, "FromNum changed " + lastFromNum + " -> " + v);
+            lastFromNum = v;
+            drainFromRadio();
+        }
+    }
+
+    private void handleFromRadioValue(byte[] value) {
+        if (!drainingFromRadio) {
+            // A read might have been triggered manually; still handle.
+            drainingFromRadio = true;
+        }
+
+        if (value == null || value.length == 0) {
+            // No more packets queued on the device.
+            drainingFromRadio = false;
+            return;
+        }
+
+        if (bytesListener != null) {
+            byte[] copy = new byte[value.length];
+            System.arraycopy(value, 0, copy, 0, value.length);
+            mainHandler.post(() -> bytesListener.onBytes(copy));
+        }
+
+        // Continue draining until empty.
+        enqueueRead(fromRadioChar);
+    }
+
     private void drainFromRadio() {
-        if (fromRadioCharacteristic == null) return;
-        opQueue.enqueueRead(fromRadioCharacteristic);
-        opQueue.kick();
+        if (gatt == null || fromRadioChar == null) return;
+        if (drainingFromRadio) return;
+
+        drainingFromRadio = true;
+        enqueueRead(fromRadioChar);
     }
 
-    private class GattOpQueue {
-        private static final long TIMEOUT_MS = 5000L;
-        private static final int MAX_RETRIES = 4;
-        private final Handler handler = new Handler(Looper.getMainLooper());
-        private final Deque<GattOp> queue = new ArrayDeque<>();
-        private GattOp active;
-
-        void enqueueWrite(BluetoothGattCharacteristic characteristic, byte[] value, int writeType) {
-            queue.add(new GattOp(GattOp.Type.WRITE_CHAR, characteristic, value, writeType));
-        }
-
-        void enqueueRead(BluetoothGattCharacteristic characteristic) {
-            queue.add(new GattOp(GattOp.Type.READ_CHAR, characteristic, null, 0));
-        }
-
-        void enqueueDescriptorWrite(BluetoothGattDescriptor descriptor, byte[] value) {
-            queue.add(new GattOp(GattOp.Type.WRITE_DESC, descriptor, value));
-        }
-
-        void clear() {
-            queue.clear();
-            active = null;
-            handler.removeCallbacksAndMessages(null);
-        }
-
-        void kick() {
-            if (active != null) return;
-            startNext();
-        }
-
-        void completeActive(boolean success) {
-            if (active == null) return;
-            handler.removeCallbacks(active.timeoutRunnable);
-            if (!success) {
-                Log.d(TAG, "GattOp failed: " + active.describe());
-            }
-            active = null;
-            startNext();
-        }
-
-        private void startNext() {
-            if (active != null) return;
-            if (bluetoothGatt == null) return;
-            active = queue.poll();
-            if (active == null) return;
-            startActive();
-        }
-
-        private void startActive() {
-            if (active == null || bluetoothGatt == null) return;
-            boolean started = active.start();
-            if (!started) {
-                scheduleRetry();
-                return;
-            }
-            Log.d(TAG, "GattOp started: " + active.describe());
-            active.timeoutRunnable = () -> {
-                Log.d(TAG, "GattOp timeout: " + active.describe());
-                active = null;
-                startNext();
-            };
-            handler.postDelayed(active.timeoutRunnable, TIMEOUT_MS);
-        }
-
-        private void scheduleRetry() {
-            if (active == null) return;
-            if (active.retries >= MAX_RETRIES) {
-                Log.d(TAG, "GattOp retries exhausted: " + active.describe());
-                active = null;
-                startNext();
-                return;
-            }
-            int delay = active.nextBackoffMs();
-            Log.d(TAG, "GattOp retry " + active.retries + ": " + active.describe() + " in " + delay + "ms");
-            handler.postDelayed(this::startActive, delay);
-        }
+    private void startFromNumPollFallback() {
+        if (fromNumPollEnabled) return;
+        fromNumPollEnabled = true;
+        mainHandler.removeCallbacks(fromNumPollRunnable);
+        mainHandler.postDelayed(fromNumPollRunnable, FROM_NUM_POLL_MS);
     }
 
-    private class GattOp {
-        enum Type {WRITE_CHAR, READ_CHAR, WRITE_DESC}
+    private static long decodeUint32LittleEndian(byte[] value) {
+        if (value == null || value.length == 0) return -1;
+        int len = Math.min(4, value.length);
+        ByteBuffer bb = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+        bb.put(value, 0, len);
+        bb.rewind();
+        // as unsigned
+        return bb.getInt() & 0xffffffffL;
+    }
 
-        private final Type type;
-        private final BluetoothGattCharacteristic characteristic;
-        private final BluetoothGattDescriptor descriptor;
-        private final byte[] value;
-        private final int writeType;
-        private int retries;
-        private Runnable timeoutRunnable;
+    // -------------------- Queue helpers --------------------
 
-        GattOp(Type type, BluetoothGattCharacteristic characteristic, byte[] value, int writeType) {
-            this.type = type;
-            this.characteristic = characteristic;
-            this.descriptor = null;
-            this.value = value;
-            this.writeType = writeType;
-        }
+    private void enqueueWrite(BluetoothGattCharacteristic ch, byte[] value) {
+        if (ch == null || gatt == null) return;
+        opQueue.add(new GattOp(OpType.WRITE_CHAR, ch, null, value));
+        processNextOp();
+    }
 
-        GattOp(Type type, BluetoothGattDescriptor descriptor, byte[] value) {
-            this.type = type;
-            this.characteristic = null;
-            this.descriptor = descriptor;
-            this.value = value;
-            this.writeType = 0;
-        }
+    private void enqueueRead(BluetoothGattCharacteristic ch) {
+        if (ch == null || gatt == null) return;
+        opQueue.add(new GattOp(OpType.READ_CHAR, ch, null, null));
+        processNextOp();
+    }
 
-        boolean start() {
-            retries++;
-            switch (type) {
-                case WRITE_CHAR:
-                    if (characteristic == null) return false;
-                    characteristic.setValue(value);
-                    characteristic.setWriteType(writeType);
-                    return bluetoothGatt.writeCharacteristic(characteristic);
-                case READ_CHAR:
-                    if (characteristic == null) return false;
-                    return bluetoothGatt.readCharacteristic(characteristic);
-                case WRITE_DESC:
-                    if (descriptor == null) return false;
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        return bluetoothGatt.writeDescriptor(descriptor, value) == BluetoothGatt.GATT_SUCCESS;
-                    }
-                    descriptor.setValue(value);
-                    return bluetoothGatt.writeDescriptor(descriptor);
-                default:
-                    return false;
+    private void enqueueWriteDesc(BluetoothGattDescriptor desc, byte[] value) {
+        if (desc == null || gatt == null) return;
+        opQueue.add(new GattOp(OpType.WRITE_DESC, null, desc, value));
+        processNextOp();
+    }
+
+    @SuppressLint("MissingPermission")
+    private void processNextOp() {
+        if (gatt == null) return;
+        if (inFlight != null) return;
+        if (opQueue.isEmpty()) return;
+
+        inFlight = opQueue.poll();
+        if (inFlight == null) return;
+
+        Log.d(TAG, "GattOp started: " + inFlight);
+
+        boolean started = false;
+        try {
+            switch (inFlight.type) {
+                case WRITE_DESC: {
+                    BluetoothGattDescriptor d = inFlight.desc;
+                    if (d == null) break;
+                    d.setValue(inFlight.value);
+                    started = gatt.writeDescriptor(d);
+                    break;
+                }
+                case READ_CHAR: {
+                    BluetoothGattCharacteristic c = inFlight.ch;
+                    if (c == null) break;
+                    started = gatt.readCharacteristic(c);
+                    break;
+                }
+                case WRITE_CHAR: {
+                    BluetoothGattCharacteristic c = inFlight.ch;
+                    if (c == null) break;
+                    // Use write-with-response for reliability.
+                    c.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+                    c.setValue(inFlight.value);
+                    started = gatt.writeCharacteristic(c);
+                    break;
+                }
             }
+        } catch (Exception e) {
+            Log.w(TAG, "GattOp failed to start: " + inFlight, e);
+            started = false;
         }
 
-        int nextBackoffMs() {
-            int base = 120;
-            int delay = base << Math.min(retries, 4);
-            return Math.min(delay, 1500);
+        if (!started) {
+            Log.w(TAG, "GattOp did not start: " + inFlight);
+            inFlight = null;
+            processNextOp();
+            return;
         }
 
-        String describe() {
-            String id = type.name();
-            if (characteristic != null) {
-                return id + " char=" + characteristic.getUuid();
-            }
-            if (descriptor != null) {
-                return id + " desc=" + descriptor.getUuid();
-            }
-            return id;
+        // Arm timeout
+        mainHandler.removeCallbacks(opTimeoutRunnable);
+        mainHandler.postDelayed(opTimeoutRunnable, OP_TIMEOUT_MS);
+    }
+
+    private void finishOp() {
+        // Cancel timeout for current op and continue.
+        mainHandler.removeCallbacks(opTimeoutRunnable);
+        inFlight = null;
+        processNextOp();
+    }
+
+    private void notifyError(String msg) {
+        Log.e(TAG, msg);
+        if (connectionListener != null) {
+            mainHandler.post(() -> connectionListener.onError(msg));
+        }
+    }
+    private void notifyReadyConnectedOnce() {
+        if (readyNotified) return;
+        readyNotified = true;
+        if (connectionListener != null) {
+            mainHandler.post(() -> connectionListener.onConnected());
         }
     }
 }
+
+
+
