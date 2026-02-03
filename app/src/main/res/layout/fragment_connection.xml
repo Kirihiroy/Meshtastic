@@ -153,7 +153,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Инструкция:\n1. Убедитесь, что устройство Meshtastic включено\n2. Сопрягите его с телефоном в настройках Bluetooth\n3. Нажмите 'Поиск устройств'\n4. Выберите устройство и нажмите 'Подключиться'"
+            android:text="Подсказка:\n• Включите Meshtastic и держите устройство рядом.\n• Убедитесь, что Bluetooth и геолокация активны.\n• Запустите поиск, затем подключитесь к найденному узлу."
             android:textSize="12sp"
             android:textColor="@color/app_on_surface_muted"
             android:padding="12dp"
