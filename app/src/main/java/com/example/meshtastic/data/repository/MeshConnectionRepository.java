@@ -8,6 +8,7 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.example.meshtastic.bluetooth.BleManager;
 import com.example.meshtastic.data.model.DeviceStatus;
+import com.example.meshtastic.data.model.Message;
 import com.example.meshtastic.data.model.NodeInfo;
 import com.example.meshtastic.data.parser.MeshProtoParser;
 
@@ -56,10 +57,13 @@ public class MeshConnectionRepository {
     private final MutableLiveData<String> lastFromRadioSummary = new MutableLiveData<>(null);
     private final MutableLiveData<List<NodeInfo>> nodes = new MutableLiveData<>(new ArrayList<>());
 
+    private final MutableLiveData<List<Message>> messages = new MutableLiveData<>(new ArrayList<>());
+
     private final Map<Long, NodeInfo> nodeMap = new ConcurrentHashMap<>();
     private final Set<String> seenAddresses = new HashSet<>();
 
     private int wantConfigId = 1;
+    private long myNodeNum = 0;
 
     private final MutableLiveData<DeviceStatus> deviceStatus = new MutableLiveData<>(new DeviceStatus());
 
@@ -97,6 +101,10 @@ public class MeshConnectionRepository {
 
     public LiveData<DeviceStatus> getDeviceStatus() {
         return deviceStatus;
+    }
+
+    public LiveData<List<Message>> getMessages() {
+        return messages;
     }
 
     public boolean isBluetoothEnabled() {
@@ -239,6 +247,40 @@ public class MeshConnectionRepository {
         return true;
     }
 
+    public boolean sendTextMessage(String text) {
+        if (text == null || text.trim().isEmpty()) return false;
+        if (state.getValue() != State.CONNECTED) return false;
+
+        byte[] payload = text.trim().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        int packetId = (int) (System.currentTimeMillis() & 0x7FFFFFFF);
+
+        MeshProtos.MeshPacket packet = MeshProtos.MeshPacket.newBuilder()
+                .setTo(-1) // 0xFFFFFFFF — broadcast
+                .setDecoded(MeshProtos.Data.newBuilder()
+                        .setPortnum(Portnums.PortNum.TEXT_MESSAGE_APP)
+                        .setPayload(com.google.protobuf.ByteString.copyFrom(payload))
+                        .build())
+                .setId(packetId)
+                .setHopLimit(3)
+                .setWantAck(true)
+                .build();
+
+        MeshProtos.ToRadio msg = MeshProtos.ToRadio.newBuilder()
+                .setPacket(packet)
+                .build();
+
+        boolean sent = sendToRadio(msg);
+        if (sent) {
+            String senderId = String.format("!%08x", myNodeNum);
+            Message message = new Message(text.trim(), senderId, true);
+            List<Message> current = messages.getValue();
+            List<Message> updated = new ArrayList<>(current != null ? current : new ArrayList<>());
+            updated.add(message);
+            messages.postValue(updated);
+        }
+        return sent;
+    }
+
     public boolean applyChannelPsk(String channelName, String pskText) {
         if (channelName == null || channelName.trim().isEmpty()) return false;
         if (pskText == null || pskText.trim().isEmpty()) return false;
@@ -313,8 +355,27 @@ public class MeshConnectionRepository {
                 break;
             }
             case MY_INFO: {
+                myNodeNum = msg.getMyInfo().getMyNodeNum() & 0xFFFFFFFFL;
                 statusText.postValue("Подключено: my_num=" + msg.getMyInfo().getMyNodeNum());
                 updateDeviceStatus(s -> s.setNodeNum((long) msg.getMyInfo().getMyNodeNum()));
+                break;
+            }
+            case PACKET: {
+                MeshProtos.MeshPacket packet = msg.getPacket();
+                if (packet.hasDecoded()) {
+                    MeshProtos.Data data = packet.getDecoded();
+                    if (data.getPortnum() == Portnums.PortNum.TEXT_MESSAGE_APP) {
+                        String text = data.getPayload().toStringUtf8();
+                        long fromNum = packet.getFrom() & 0xFFFFFFFFL;
+                        String senderId = String.format("!%08x", fromNum);
+                        boolean isOwn = (fromNum != 0 && fromNum == myNodeNum);
+                        Message message = new Message(text, senderId, isOwn);
+                        List<Message> current = messages.getValue();
+                        List<Message> updated = new ArrayList<>(current != null ? current : new ArrayList<>());
+                        updated.add(message);
+                        messages.postValue(updated);
+                    }
+                }
                 break;
             }
             case METADATA: {
