@@ -12,6 +12,7 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
+import com.example.meshtastic.ui.chat.ChatFragment;
 import com.example.meshtastic.ui.connection.ConnectionFragment;
 import com.example.meshtastic.ui.nodes.NodesFragment;
 import com.example.meshtastic.ui.settings.SettingsFragment;
@@ -40,6 +41,9 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             } else if (item.getItemId() == R.id.nav_nodes) {
                 showFragment(new NodesFragment());
+                return true;
+            } else if (item.getItemId() == R.id.nav_chat) {
+                showFragment(new ChatFragment());
                 return true;
             } else if (item.getItemId() == R.id.nav_settings) {
                 showFragment(new SettingsFragment());
