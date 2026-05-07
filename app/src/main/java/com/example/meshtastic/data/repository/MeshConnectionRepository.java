@@ -363,9 +363,9 @@ public class MeshConnectionRepository {
             case PACKET: {
                 MeshProtos.MeshPacket packet = msg.getPacket();
                 if (packet.hasDecoded()) {
-                    MeshProtos.Data data = packet.getDecoded();
-                    if (data.getPortnum() == Portnums.PortNum.TEXT_MESSAGE_APP) {
-                        String text = data.getPayload().toStringUtf8();
+                    MeshProtos.Data decoded = packet.getDecoded();
+                    if (decoded.getPortnum() == Portnums.PortNum.TEXT_MESSAGE_APP) {
+                        String text = decoded.getPayload().toStringUtf8();
                         long fromNum = packet.getFrom() & 0xFFFFFFFFL;
                         String senderId = String.format("!%08x", fromNum);
                         boolean isOwn = (fromNum != 0 && fromNum == myNodeNum);
