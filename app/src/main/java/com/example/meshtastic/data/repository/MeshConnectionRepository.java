@@ -2,32 +2,40 @@ package com.example.meshtastic.data.repository;
 
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
+import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.example.meshtastic.R;
 import com.example.meshtastic.bluetooth.BleManager;
 import com.example.meshtastic.data.model.DeviceStatus;
 import com.example.meshtastic.data.model.Message;
 import com.example.meshtastic.data.model.NodeInfo;
 import com.example.meshtastic.data.parser.MeshProtoParser;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+
+import org.meshtastic.proto.AdminProtos;
 import org.meshtastic.proto.ChannelProtos;
 import org.meshtastic.proto.MeshProtos;
 import org.meshtastic.proto.Portnums;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Единая точка управления BLE соединением с Meshtastic.
  * Хранит состояние и позволяет нескольким экранам наблюдать за ним через LiveData.
  */
 public class MeshConnectionRepository {
+
+    private static final String TAG = "MeshConnectionRepo";
 
     public enum State {
         DISCONNECTED,
@@ -46,10 +54,11 @@ public class MeshConnectionRepository {
         return instance;
     }
 
+    private final Context appContext;
     private final BleManager bleManager;
 
     private final MutableLiveData<State> state = new MutableLiveData<>(State.DISCONNECTED);
-    private final MutableLiveData<String> statusText = new MutableLiveData<>("Не подключено");
+    private final MutableLiveData<String> statusText;
     private final MutableLiveData<List<BluetoothDevice>> devices = new MutableLiveData<>(new ArrayList<>());
     private final MutableLiveData<BluetoothDevice> selectedDevice = new MutableLiveData<>(null);
 
@@ -60,15 +69,23 @@ public class MeshConnectionRepository {
     private final MutableLiveData<List<Message>> messages = new MutableLiveData<>(new ArrayList<>());
 
     private final Map<Long, NodeInfo> nodeMap = new ConcurrentHashMap<>();
-    private final Set<String> seenAddresses = new HashSet<>();
+    private final Set<String> seenAddresses = ConcurrentHashMap.newKeySet();
 
     private int wantConfigId = 1;
     private long myNodeNum = 0;
 
+    private final AtomicInteger packetIdGen = new AtomicInteger(new Random().nextInt());
+
     private final MutableLiveData<DeviceStatus> deviceStatus = new MutableLiveData<>(new DeviceStatus());
 
     private MeshConnectionRepository(Context context) {
-        bleManager = new BleManager(context);
+        this.appContext = context.getApplicationContext();
+        this.bleManager = new BleManager(appContext);
+        this.statusText = new MutableLiveData<>(appContext.getString(R.string.repo_state_disconnected));
+    }
+
+    private String s(int resId, Object... args) {
+        return appContext.getString(resId, args);
     }
 
     public LiveData<State> getState() {
@@ -113,10 +130,11 @@ public class MeshConnectionRepository {
 
     public void startScan() {
         state.postValue(State.SCANNING);
-        statusText.postValue("Сканирование BLE…");
-        updateDeviceStatus(s -> {
-            s.setState(State.SCANNING.name());
-            s.setStatusText("Сканирование BLE…");
+        String scanningMsg = s(R.string.repo_state_scanning);
+        statusText.postValue(scanningMsg);
+        updateDeviceStatus(ds -> {
+            ds.setState(State.SCANNING.name());
+            ds.setStatusText(scanningMsg);
         });
         devices.postValue(new ArrayList<>());
         seenAddresses.clear();
@@ -146,7 +164,7 @@ public class MeshConnectionRepository {
         bleManager.stopScan();
         if (state.getValue() == State.SCANNING) {
             state.postValue(State.DISCONNECTED);
-            statusText.postValue("Сканирование остановлено");
+            statusText.postValue(s(R.string.repo_state_scan_stopped));
         }
     }
 
@@ -157,61 +175,77 @@ public class MeshConnectionRepository {
     public void connect() {
         BluetoothDevice device = selectedDevice.getValue();
         if (device == null) {
+            String noDevice = s(R.string.repo_state_no_device);
             state.postValue(State.ERROR);
-            statusText.postValue("Устройство не выбрано");
-            updateDeviceStatus(s -> {
-                s.setState(State.ERROR.name());
-                s.setStatusText("Устройство не выбрано");
+            statusText.postValue(noDevice);
+            updateDeviceStatus(ds -> {
+                ds.setState(State.ERROR.name());
+                ds.setStatusText(noDevice);
             });
             return;
         }
 
-        updateDeviceStatus(s -> {
-            s.setState(State.CONNECTING.name());
-            s.setDeviceName(safeName(device));
-            s.setStatusText("Подключение к " + safeName(device) + "…");
+        String connectingMsg = s(R.string.repo_state_connecting, safeName(device));
+        updateDeviceStatus(ds -> {
+            ds.setState(State.CONNECTING.name());
+            ds.setDeviceName(safeName(device));
+            ds.setStatusText(connectingMsg);
         });
 
         state.postValue(State.CONNECTING);
-        statusText.postValue("Подключение к " + safeName(device) + "…");
+        statusText.postValue(connectingMsg);
 
         bleManager.connect(device, new BleManager.ConnectionListener() {
             @Override
             public void onConnected() {
-                state.postValue(State.CONNECTED);
-                statusText.postValue("Подключено: " + safeName(device));
-                updateDeviceStatus(s -> {
-                    s.setState(State.CONNECTED.name());
-                    s.setStatusText("Подключено: " + safeName(device));
+                // GATT-соединение установлено, но сервисы и CCCD ещё не готовы.
+                String msg = s(R.string.repo_state_connected, safeName(device));
+                statusText.postValue(msg);
+                updateDeviceStatus(ds -> {
+                    ds.setState(State.CONNECTING.name());
+                    ds.setStatusText(msg);
                 });
-                // Сразу попросим конфиг/инфо, чтобы устройство начало отвечать FromRadio
+            }
+
+            @Override
+            public void onReady() {
+                // CCCD активирован — теперь устройство примет ToRadio.
+                String msg = s(R.string.repo_state_ready, safeName(device));
+                state.postValue(State.CONNECTED);
+                statusText.postValue(msg);
+                updateDeviceStatus(ds -> {
+                    ds.setState(State.CONNECTED.name());
+                    ds.setStatusText(msg);
+                });
                 requestConfig();
             }
 
             @Override
             public void onDisconnected() {
+                String msg = s(R.string.repo_state_disconnected_short);
                 state.postValue(State.DISCONNECTED);
-                statusText.postValue("Отключено");
-                updateDeviceStatus(s -> {
-                    s.setState(State.DISCONNECTED.name());
-                    s.setStatusText("Отключено");
+                statusText.postValue(msg);
+                updateDeviceStatus(ds -> {
+                    ds.setState(State.DISCONNECTED.name());
+                    ds.setStatusText(msg);
                 });
             }
 
             @Override
             public void onError(String message) {
+                String msg = (message != null) ? message : s(R.string.repo_state_error_generic);
                 state.postValue(State.ERROR);
-                statusText.postValue(message != null ? message : "Ошибка");
-                updateDeviceStatus(s -> {
-                    s.setState(State.ERROR.name());
-                    s.setStatusText(message != null ? message : "Ошибка");
+                statusText.postValue(msg);
+                updateDeviceStatus(ds -> {
+                    ds.setState(State.ERROR.name());
+                    ds.setStatusText(msg);
                 });
             }
         }, data -> {
             lastRx.postValue(data);
-            updateDeviceStatus(s -> {
-                s.setLastRxAt(System.currentTimeMillis());
-                s.setLastRxHex(toHex(data));
+            updateDeviceStatus(ds -> {
+                ds.setLastRxAt(System.currentTimeMillis());
+                ds.setLastRxHex(toHex(data));
             });
             handleFromRadio(data);
         });
@@ -220,7 +254,7 @@ public class MeshConnectionRepository {
     public void disconnect() {
         bleManager.disconnect();
         state.postValue(State.DISCONNECTED);
-        statusText.postValue("Отключено");
+        statusText.postValue(s(R.string.repo_state_disconnected_short));
         // можно очистить список узлов при отключении
         nodeMap.clear();
         nodes.postValue(new ArrayList<>());
@@ -252,15 +286,14 @@ public class MeshConnectionRepository {
         if (state.getValue() != State.CONNECTED) return false;
 
         byte[] payload = text.trim().getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        int packetId = (int) (System.currentTimeMillis() & 0x7FFFFFFF);
 
         MeshProtos.MeshPacket packet = MeshProtos.MeshPacket.newBuilder()
-                .setTo(-1) // 0xFFFFFFFF — broadcast
+                .setTo(0xFFFFFFFF) // broadcast
                 .setDecoded(MeshProtos.Data.newBuilder()
                         .setPortnum(Portnums.PortNum.TEXT_MESSAGE_APP)
                         .setPayload(com.google.protobuf.ByteString.copyFrom(payload))
                         .build())
-                .setId(packetId)
+                .setId(nextPacketId())
                 .setHopLimit(3)
                 .setWantAck(true)
                 .build();
@@ -281,12 +314,29 @@ public class MeshConnectionRepository {
         return sent;
     }
 
+    /**
+     * Применить имя канала + PSK на устройство.
+     *
+     * <p>PSK интерпретируется как hex (16/32 байта = 32/64 hex-символа) либо пустая строка
+     * (отключить шифрование). Любой другой формат отвергается, чтобы не разойтись с прошивкой.
+     */
     public boolean applyChannelPsk(String channelName, String pskText) {
-        if (channelName == null || channelName.trim().isEmpty()) return false;
-        if (pskText == null || pskText.trim().isEmpty()) return false;
-        if (state.getValue() != State.CONNECTED) return false;
+        if (channelName == null || channelName.trim().isEmpty()) {
+            statusText.postValue(s(R.string.repo_psk_empty_channel));
+            return false;
+        }
+        if (state.getValue() != State.CONNECTED) {
+            statusText.postValue(s(R.string.repo_psk_no_connection));
+            return false;
+        }
 
-        byte[] pskBytes = pskText.trim().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        byte[] pskBytes;
+        try {
+            pskBytes = parsePsk(pskText);
+        } catch (IllegalArgumentException e) {
+            statusText.postValue(s(R.string.repo_psk_invalid, e.getMessage()));
+            return false;
+        }
 
         ChannelProtos.ChannelSettings settings = ChannelProtos.ChannelSettings.newBuilder()
                 .setName(channelName.trim())
@@ -299,15 +349,22 @@ public class MeshConnectionRepository {
                 .setSettings(settings)
                 .build();
 
-        MeshProtos.FromRadio out = MeshProtos.FromRadio.newBuilder()
-                .setChannel(channel)
+        AdminProtos.AdminMessage admin = AdminProtos.AdminMessage.newBuilder()
+                .setSetChannel(channel)
                 .build();
 
+        int destNum = (myNodeNum == 0) ? 0xFFFFFFFF : (int) myNodeNum;
+
         MeshProtos.MeshPacket packet = MeshProtos.MeshPacket.newBuilder()
+                .setTo(destNum)
                 .setDecoded(MeshProtos.Data.newBuilder()
                         .setPortnum(Portnums.PortNum.ADMIN_APP)
-                        .setPayload(out.toByteString())
+                        .setPayload(admin.toByteString())
+                        .setWantResponse(true)
                         .build())
+                .setId(nextPacketId())
+                .setHopLimit(0)
+                .setWantAck(true)
                 .build();
 
         MeshProtos.ToRadio msg = MeshProtos.ToRadio.newBuilder()
@@ -315,6 +372,32 @@ public class MeshConnectionRepository {
                 .build();
 
         return sendToRadio(msg);
+    }
+
+    /** Возвращает следующий уникальный packet id (положительный 31-битный). */
+    private int nextPacketId() {
+        int id = packetIdGen.incrementAndGet();
+        return id == 0 ? packetIdGen.incrementAndGet() & 0x7FFFFFFF : id & 0x7FFFFFFF;
+    }
+
+    /**
+     * Разобрать PSK: пустая строка → нет шифрования; иначе hex длиной 32 или 64 символа
+     * (=> 16 или 32 байта). Прочее — IllegalArgumentException.
+     */
+    private static byte[] parsePsk(String text) {
+        String t = text == null ? "" : text.trim();
+        if (t.isEmpty()) return new byte[0];
+        if (!t.matches("^[0-9a-fA-F]+$")) {
+            throw new IllegalArgumentException("ожидается hex (только 0-9 a-f)");
+        }
+        if (t.length() != 32 && t.length() != 64) {
+            throw new IllegalArgumentException("длина hex должна быть 32 (AES-128) или 64 (AES-256)");
+        }
+        byte[] out = new byte[t.length() / 2];
+        for (int i = 0; i < out.length; i++) {
+            out[i] = (byte) Integer.parseInt(t.substring(i * 2, i * 2 + 2), 16);
+        }
+        return out;
     }
 
     private static String safeName(BluetoothDevice d) {
@@ -329,14 +412,18 @@ public class MeshConnectionRepository {
         MeshProtos.FromRadio msg;
         try {
             msg = MeshProtos.FromRadio.parseFrom(data);
+        } catch (InvalidProtocolBufferException e) {
+            Log.w(TAG, "FromRadio parse failed (битый protobuf, len=" + data.length + ")", e);
+            return;
         } catch (Exception e) {
+            Log.e(TAG, "FromRadio parse: непредвиденная ошибка", e);
             return;
         }
 
         String summary = MeshProtoParser.parseFromRadioSummary(data);
         if (summary != null) {
             lastFromRadioSummary.postValue(summary);
-            updateDeviceStatus(s -> s.setLastSummary(summary));
+            updateDeviceStatus(ds -> ds.setLastSummary(summary));
         }
 
         switch (msg.getPayloadVariantCase()) {
@@ -346,18 +433,19 @@ public class MeshConnectionRepository {
                 nodeMap.put(model.getNodeNum(), model);
                 nodes.postValue(new ArrayList<>(nodeMap.values()));
                 if (model.getNodeNum() != 0) {
-                    updateDeviceStatus(s -> {
-                        s.setSnr(model.getSnr());
-                        s.setBatteryPercent(model.getBatteryLevel());
-                        s.setLastHeard(model.getLastHeard());
+                    updateDeviceStatus(ds -> {
+                        ds.setSnr(model.getSnr());
+                        ds.setBatteryPercent(model.getBatteryLevel());
+                        ds.setLastHeard(model.getLastHeard());
                     });
                 }
                 break;
             }
             case MY_INFO: {
-                myNodeNum = msg.getMyInfo().getMyNodeNum() & 0xFFFFFFFFL;
-                statusText.postValue("Подключено: my_num=" + msg.getMyInfo().getMyNodeNum());
-                updateDeviceStatus(s -> s.setNodeNum((long) msg.getMyInfo().getMyNodeNum()));
+                long unsignedNum = msg.getMyInfo().getMyNodeNum() & 0xFFFFFFFFL;
+                myNodeNum = unsignedNum;
+                statusText.postValue(s(R.string.repo_state_my_num, unsignedNum));
+                updateDeviceStatus(ds -> ds.setNodeNum(unsignedNum));
                 break;
             }
             case PACKET: {
@@ -379,7 +467,7 @@ public class MeshConnectionRepository {
                 break;
             }
             case METADATA: {
-                updateDeviceStatus(s -> s.setFirmwareVersion(msg.getMetadata().getFirmwareVersion()));
+                updateDeviceStatus(ds -> ds.setFirmwareVersion(msg.getMetadata().getFirmwareVersion()));
                 break;
             }
             default:
@@ -388,10 +476,12 @@ public class MeshConnectionRepository {
     }
 
     private void updateDeviceStatus(java.util.function.Consumer<DeviceStatus> updater) {
+        // Копируем перед мутацией: иначе LiveData отдаёт ту же ссылку, и observer'ы,
+        // сравнивающие через equals(), пропустят обновление.
         DeviceStatus current = deviceStatus.getValue();
-        if (current == null) current = new DeviceStatus();
-        updater.accept(current);
-        deviceStatus.postValue(current);
+        DeviceStatus copy = (current != null) ? new DeviceStatus(current) : new DeviceStatus();
+        updater.accept(copy);
+        deviceStatus.postValue(copy);
     }
 
     private static String toHex(byte[] data) {
@@ -443,7 +533,10 @@ public class MeshConnectionRepository {
         return n;
     }
 
+    // TODO(serial): frameDelimited()/encodeVarint32() сейчас не вызываются — зарезервированы
+    //               для будущего USB-Serial транспорта (там нужен varint length-prefix).
     /** Builds Meshtastic "length-delimited" frame: [varint32 length][payload]. */
+    @SuppressWarnings("unused")
     private static byte[] frameDelimited(byte[] payload) {
         if (payload == null) payload = new byte[0];
         byte[] len = encodeVarint32(payload.length);
@@ -454,6 +547,7 @@ public class MeshConnectionRepository {
     }
 
     /** Protobuf varint32 encoder (little-endian base-128). */
+    @SuppressWarnings("unused")
     private static byte[] encodeVarint32(int value) {
         // max 5 bytes for 32-bit
         byte[] tmp = new byte[5];

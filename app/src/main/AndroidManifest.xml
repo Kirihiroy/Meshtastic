@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools" android:versionName="1.0" android:versionCode="1">
-    <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="33"></uses-sdk>
+    <!-- minSdk/targetSdk управляются из app/build.gradle.kts; <uses-sdk> здесь не нужен. -->
+
+    <!-- Классический BT (legacy, для устройств < API 31) -->
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+
     <!-- Для Android 12+ (API 31+) -->
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
         android:usesPermissionFlags="neverForLocation" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 
+    <!-- ACCESS_FINE_LOCATION требуется для GPS (передача координат), а не для BLE-сканирования.
+         BLE_SCAN объявлен с neverForLocation, поэтому от Location он не зависит. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <!-- Для Android 10+ (API 29+) -->
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
-    <!-- Для Foreground Service -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <!-- Для интернета (если нужен для загрузки тайлов карты) -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />

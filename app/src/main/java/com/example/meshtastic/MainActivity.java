@@ -10,8 +10,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
-import com.google.android.material.bottomnavigation.BottomNavigationView;
-
+import com.example.meshtastic.databinding.ActivityMainBinding;
 import com.example.meshtastic.ui.chat.ChatFragment;
 import com.example.meshtastic.ui.connection.ConnectionFragment;
 import com.example.meshtastic.ui.nodes.NodesFragment;
@@ -20,19 +19,22 @@ import com.example.meshtastic.ui.status.StatusFragment;
 
 public class MainActivity extends AppCompatActivity {
 
+    private ActivityMainBinding binding;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_main);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+
+        ViewCompat.setOnApplyWindowInsetsListener(binding.main, (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
 
-        BottomNavigationView bottomNav = findViewById(R.id.bottom_nav);
-        bottomNav.setOnItemSelectedListener(item -> {
+        binding.bottomNav.setOnItemSelectedListener(item -> {
             if (item.getItemId() == R.id.nav_connection) {
                 showFragment(new ConnectionFragment());
                 return true;
@@ -52,9 +54,8 @@ public class MainActivity extends AppCompatActivity {
             return false;
         });
 
-        // Стартовый экран
         if (savedInstanceState == null) {
-            bottomNav.setSelectedItemId(R.id.nav_connection);
+            binding.bottomNav.setSelectedItemId(R.id.nav_connection);
         }
     }
 

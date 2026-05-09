@@ -37,8 +37,14 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    buildFeatures {
+        viewBinding = true
+    }
+
     buildTypes {
         release {
+            // MVP: minification отложен до подготовки proguard-rules для protobuf-lite
+            // (нужны -keep для org.meshtastic.proto.** и androidx.lifecycle.*).
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -65,6 +71,8 @@ dependencies {
     implementation("androidx.fragment:fragment:1.6.2")
     implementation("com.google.android.material:material:1.12.0")
     // Room Database
+    // TODO(persistence): задел — Entity/Dao/Database ещё не реализованы.
+    // При появлении хранилища сообщений/узлов задействовать.
     val roomVersion = "2.6.1"
     implementation("androidx.room:room-runtime:$roomVersion")
     annotationProcessor("androidx.room:room-compiler:$roomVersion")
@@ -81,6 +89,8 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.3.2")
 
     // Location Services
+    // TODO(location): сейчас используется LocationManager в LocationHelper.java;
+    //                 при миграции на FusedLocationProviderClient — задействовать эту зависимость.
     implementation("com.google.android.gms:play-services-location:21.0.1")
 
     // Тестирование

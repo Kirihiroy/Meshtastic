@@ -1,1 +1,20 @@
+syntax = "proto3";
 
+package meshtastic;
+
+option java_package = "org.meshtastic.proto";
+option java_outer_classname = "AdminProtos";
+
+import "meshtastic/channel.proto";
+
+/*
+ * Минимальный AdminMessage для нужд клиента: установка канала.
+ * Номера полей соответствуют upstream meshtastic-protobufs (set_channel = 4),
+ * чтобы прошивка корректно декодировала команду.
+ * Расширять при необходимости.
+ */
+message AdminMessage {
+  oneof payload_variant {
+    meshtastic.Channel set_channel = 4;
+  }
+}

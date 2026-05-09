@@ -7,7 +7,10 @@ import java.util.List;
 
 /**
  * Парсер length-delimited protobuf сообщений (varint длина + payload).
- * Используется для BLE потока Meshtastic, где сообщения могут приходить порциями.
+ *
+ * TODO(serial): сейчас не используется. BLE-транспорт отдаёт каждый FromRadio как
+ * самостоятельное чтение характеристики, без length-prefix. Этот класс нужен для
+ * будущего USB-Serial транспорта Meshtastic, где пакеты идут единым потоком.
  */
 public class ProtobufStreamParser {
     private static final int MAX_VARINT_BYTES = 5; // uint32

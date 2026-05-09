@@ -60,7 +60,10 @@ public class BleManager {
     }
 
     public interface ConnectionListener {
+        /** GATT-соединение установлено (low-level). UI может показать «соединяется». */
         void onConnected();
+        /** Сервисы найдены, CCCD активирован — теперь безопасно слать ToRadio. */
+        void onReady();
         void onDisconnected();
         void onError(String msg);
     }
@@ -122,18 +125,8 @@ public class BleManager {
 
     private final ArrayDeque<GattOp> opQueue = new ArrayDeque<>();
     private GattOp inFlight = null;
-    private final Runnable opTimeoutRunnable = new Runnable() {
-        @Override public void run() {
-            gattHandler.post(() -> {
-                if (inFlight != null) {
-                    Log.w(TAG, "GattOp timeout: " + inFlight);
-                    // Clear the stuck op and move on; if the stack is truly wedged, later ops will also timeout.
-                    inFlight = null;
-                    processNextOp();
-                }
-            });
-        }
-    };
+    /** Монотонная эпоха для текущей in-flight операции. Защищает от поздних callback'ов и таймаутов. */
+    private long inFlightSeq = 0;
 
     // --- FromRadio draining state ---
     private boolean drainingFromRadio = false;
@@ -237,13 +230,15 @@ public class BleManager {
     @SuppressLint("MissingPermission")
     public void disconnect() {
         gattHandler.post(() -> {
+            // Флаги fromNumPollEnabled и эпоха inFlightSeq защищают от поздних срабатываний:
+            // даже если runnable/таймаут ещё в очереди mainHandler, их проверки внутри будут false.
             fromNumPollEnabled = false;
             mainHandler.removeCallbacks(fromNumPollRunnable);
 
             drainingFromRadio = false;
             opQueue.clear();
             inFlight = null;
-            mainHandler.removeCallbacks(opTimeoutRunnable);
+            inFlightSeq++; // инвалидируем все живые таймауты предыдущих операций
 
             if (gatt != null) {
                 try { gatt.disconnect(); } catch (Exception ignored) {}
@@ -269,7 +264,7 @@ public class BleManager {
         drainingFromRadio = false;
         opQueue.clear();
         inFlight = null;
-        mainHandler.removeCallbacks(opTimeoutRunnable);
+        inFlightSeq++; // инвалидируем устаревшие таймауты
 
         if (gatt != null) {
             try { gatt.disconnect(); } catch (Exception ignored) {}
@@ -277,6 +272,7 @@ public class BleManager {
         }
         gatt = null;
         connected = false;
+        readyNotified = false;
         toRadioChar = null;
         fromRadioChar = null;
         fromNumChar = null;
@@ -394,6 +390,8 @@ public class BleManager {
                         if ((p & BluetoothGattCharacteristic.PROPERTY_READ) != 0) {
                             fromRadioChar = c;
                             Log.w(TAG, "FromRadio UUID fallback picked: " + u);
+                            // Сообщаем UI: возможна несовместимость прошивки.
+                            notifyError("FromRadio UUID не найден, используется эвристика (" + u + ")");
                             break;
                         }
                     }
@@ -424,6 +422,8 @@ public class BleManager {
                     drainFromRadio();
                     // Also read FromNum once to capture a baseline counter
                     enqueueRead(fromNumChar);
+                    // Сообщаем потребителям, что транспорт готов: ToRadio будет принят.
+                    notifyReady();
                 }
             });
         }
@@ -606,8 +606,10 @@ public class BleManager {
 
         inFlight = opQueue.poll();
         if (inFlight == null) return;
+        inFlightSeq++;
+        final long mySeq = inFlightSeq;
 
-        Log.d(TAG, "GattOp started: " + inFlight);
+        Log.d(TAG, "GattOp started [seq=" + mySeq + "]: " + inFlight);
 
         boolean started = false;
         try {
@@ -647,14 +649,20 @@ public class BleManager {
             return;
         }
 
-        // Arm timeout
-        mainHandler.removeCallbacks(opTimeoutRunnable);
-        mainHandler.postDelayed(opTimeoutRunnable, OP_TIMEOUT_MS);
+        // Arm timeout с привязкой к эпохе: если callback успеет — таймаут увидит несовпадение seq.
+        mainHandler.postDelayed(() -> gattHandler.post(() -> {
+            if (inFlight != null && inFlightSeq == mySeq) {
+                Log.w(TAG, "GattOp timeout [seq=" + mySeq + "]: " + inFlight);
+                inFlight = null;
+                processNextOp();
+            }
+            // иначе callback уже отработал — таймаут устарел.
+        }), OP_TIMEOUT_MS);
     }
 
     private void finishOp() {
-        // Cancel timeout for current op and continue.
-        mainHandler.removeCallbacks(opTimeoutRunnable);
+        // Эпоху не сбрасываем: следующий start её инкрементирует. Этим мы делаем
+        // устаревшие таймауты безвредными (см. processNextOp).
         inFlight = null;
         processNextOp();
     }
@@ -665,11 +673,11 @@ public class BleManager {
             mainHandler.post(() -> connectionListener.onError(msg));
         }
     }
-    private void notifyReadyConnectedOnce() {
+    private void notifyReady() {
         if (readyNotified) return;
         readyNotified = true;
         if (connectionListener != null) {
-            mainHandler.post(() -> connectionListener.onConnected());
+            mainHandler.post(() -> connectionListener.onReady());
         }
     }
 }

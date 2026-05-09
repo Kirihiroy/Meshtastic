@@ -1,3 +1,93 @@
 <resources>
     <string name="app_name">Meshtastic</string>
+
+    <!-- ConnectionFragment -->
+    <string name="connection_title">Контроль подключения</string>
+    <string name="connection_subtitle">Поиск устройства, канал связи и диагностика</string>
+    <string name="connection_status_initial">Проверка состояния Bluetooth...</string>
+    <string name="connection_btn_scan">Поиск устройств</string>
+    <string name="connection_btn_connect">Подключиться</string>
+    <string name="connection_btn_send_test">Отправить тест (ping)</string>
+    <string name="connection_devicelist_initial">Нажмите «Поиск устройств» для начала</string>
+    <string name="connection_lastrx_label">Последние входящие байты (hex):</string>
+    <string name="connection_dash">—</string>
+    <string name="connection_hint">Подсказка:\n• Включите Meshtastic и держите устройство рядом.\n• Убедитесь, что Bluetooth и геолокация активны.\n• Запустите поиск, затем подключитесь к найденному узлу.</string>
+
+    <string name="connection_bluetooth_off">Bluetooth выключен. Включите Bluetooth в настройках.</string>
+    <string name="connection_bluetooth_on">Bluetooth включен. Готов к поиску устройств.</string>
+    <string name="connection_toast_enable_bt">Включите Bluetooth</string>
+    <string name="connection_toast_select_device">Сначала выберите устройство</string>
+    <string name="connection_toast_permissions_granted">Разрешения предоставлены</string>
+    <string name="connection_toast_permissions_required">Необходимы разрешения для работы Bluetooth</string>
+    <string name="connection_status_scanning">Поиск BLE устройств Meshtastic...</string>
+    <string name="connection_status_searching">Поиск…</string>
+    <string name="connection_status_no_devices">Устройства не найдены. Убедитесь, что Heltec включен и рядом.\n</string>
+    <string name="connection_status_connecting">Подключение...</string>
+    <string name="connection_device_unknown">Неизвестное устройство</string>
+    <string name="connection_device_line">%1$d. %2$s\n   %3$s\n\n</string>
+    <string name="connection_test_sent">Запрос конфигурации отправлен</string>
+    <string name="connection_test_failed">Не удалось отправить</string>
+
+    <!-- StatusFragment -->
+    <string name="status_title">Панель состояния</string>
+    <string name="status_subtitle">Сигналы, пакеты и события соединения</string>
+    <string name="status_label_state">Состояние:</string>
+    <string name="status_label_message">Сообщение:</string>
+    <string name="status_label_lastrx_hex">Последние входящие байты (hex):</string>
+    <string name="status_label_parsed">Расшифрованное FromRadio сообщение:</string>
+    <string name="status_label_details">Детали устройства:</string>
+    <string name="status_label_data_source">Данные берутся из protobuf FromRadio: my_info, node_info, config, packet и др.</string>
+
+    <!-- NodesFragment -->
+    <string name="nodes_title">Карта узлов</string>
+    <string name="nodes_subtitle">Сводка по найденным участникам сети</string>
+    <string name="nodes_empty">Нет узлов. Подключитесь и дождитесь пакетов FromRadio.</string>
+    <string name="nodes_subtitle_format">ID: %1$s | Num: %2$s</string>
+    <string name="nodes_meta_battery">Batt: %1$d%%</string>
+    <string name="nodes_meta_snr">SNR: %1$.1f</string>
+    <string name="nodes_meta_hops">Hops: %1$d</string>
+    <string name="nodes_meta_channel">Ch: %1$d</string>
+    <string name="nodes_meta_via_mqtt">via MQTT</string>
+    <string name="nodes_coords_format">Lat: %1$.5f  Lon: %2$.5f</string>
+    <string name="nodes_last_heard_format">last heard: %1$d</string>
+    <string name="nodes_default_name">Node %1$d</string>
+
+    <!-- SettingsFragment -->
+    <string name="settings_title">Панель конфигурации</string>
+    <string name="settings_subtitle">Сеть, безопасность и идентификация узла</string>
+    <string name="settings_label_node_name">Имя узла</string>
+    <string name="settings_hint_node_name">например: TEAM-1</string>
+    <string name="settings_label_region">Регион</string>
+    <string name="settings_hint_region">например: EU_868</string>
+    <string name="settings_label_channel_name">Имя канала</string>
+    <string name="settings_hint_channel_name">например: GROUP</string>
+    <string name="settings_label_psk">Ключ канала / PSK (hex 32 или 64 символа)</string>
+    <string name="settings_hint_psk">hex (16 или 32 байта)</string>
+    <string name="settings_btn_save">Сохранить</string>
+    <string name="settings_btn_apply">Применить на устройство</string>
+    <string name="settings_footer">Важно: настройки сохраняются локально как черновик и могут быть отправлены на устройство по BLE. Сейчас применяется имя канала и PSK.</string>
+    <string name="settings_toast_draft_saved">Черновик сохранен</string>
+    <string name="settings_toast_missing_channel">Укажите имя канала и PSK</string>
+    <string name="settings_toast_applied">Настройки отправлены</string>
+    <string name="settings_toast_apply_failed">Не удалось отправить</string>
+
+    <!-- ChatFragment -->
+    <string name="chat_hint_message">Введите сообщение...</string>
+    <string name="chat_btn_send_desc">Отправить</string>
+    <string name="chat_toast_no_connection">Нет подключения к устройству</string>
+
+    <!-- Repository messages -->
+    <string name="repo_state_disconnected">Не подключено</string>
+    <string name="repo_state_scanning">Сканирование BLE…</string>
+    <string name="repo_state_scan_stopped">Сканирование остановлено</string>
+    <string name="repo_state_no_device">Устройство не выбрано</string>
+    <string name="repo_state_connecting">Подключение к %1$s…</string>
+    <string name="repo_state_connected">Подключено: %1$s, инициализация…</string>
+    <string name="repo_state_ready">Готово: %1$s</string>
+    <string name="repo_state_disconnected_short">Отключено</string>
+    <string name="repo_state_my_num">Подключено: my_num=%1$d</string>
+    <string name="repo_state_error_generic">Ошибка</string>
+    <string name="repo_psk_invalid">Неверный PSK: %1$s</string>
+    <string name="repo_psk_no_connection">Нет подключения для применения настроек</string>
+    <string name="repo_psk_empty_channel">Имя канала пустое</string>
 </resources>

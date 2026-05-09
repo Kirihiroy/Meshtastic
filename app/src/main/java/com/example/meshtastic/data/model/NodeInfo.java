@@ -1,5 +1,7 @@
 package com.example.meshtastic.data.model;
 
+import java.util.Objects;
+
 /**
  * Информация об узле в mesh-сети.
  */
@@ -111,5 +113,30 @@ public class NodeInfo {
 
     public void setChannel(Integer channel) {
         this.channel = channel;
+    }
+
+    /** Идентичность узла — по nodeNum (стабильный ключ из протокола). */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof NodeInfo)) return false;
+        NodeInfo that = (NodeInfo) o;
+        return nodeNum == that.nodeNum
+                && Double.compare(that.latitude, latitude) == 0
+                && Double.compare(that.longitude, longitude) == 0
+                && Float.compare(that.snr, snr) == 0
+                && batteryLevel == that.batteryLevel
+                && lastHeard == that.lastHeard
+                && viaMqtt == that.viaMqtt
+                && Objects.equals(userId, that.userId)
+                && Objects.equals(longName, that.longName)
+                && Objects.equals(shortName, that.shortName)
+                && Objects.equals(hopsAway, that.hopsAway)
+                && Objects.equals(channel, that.channel);
+    }
+
+    @Override
+    public int hashCode() {
+        return Long.hashCode(nodeNum);
     }
 }

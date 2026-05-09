@@ -6,17 +6,30 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.meshtastic.R;
 import com.example.meshtastic.data.model.NodeInfo;
 
-import java.util.ArrayList;
-import java.util.List;
+class NodesAdapter extends ListAdapter<NodeInfo, NodesAdapter.VH> {
 
-class NodesAdapter extends RecyclerView.Adapter<NodesAdapter.VH> {
+    private static final DiffUtil.ItemCallback<NodeInfo> DIFF = new DiffUtil.ItemCallback<NodeInfo>() {
+        @Override
+        public boolean areItemsTheSame(@NonNull NodeInfo a, @NonNull NodeInfo b) {
+            return a.getNodeNum() == b.getNodeNum();
+        }
 
-    private final List<NodeInfo> items = new ArrayList<>();
+        @Override
+        public boolean areContentsTheSame(@NonNull NodeInfo a, @NonNull NodeInfo b) {
+            return a.equals(b);
+        }
+    };
+
+    NodesAdapter() {
+        super(DIFF);
+    }
 
     @NonNull
     @Override
@@ -28,48 +41,50 @@ class NodesAdapter extends RecyclerView.Adapter<NodesAdapter.VH> {
 
     @Override
     public void onBindViewHolder(@NonNull VH holder, int position) {
-        NodeInfo n = items.get(position);
-        holder.title.setText(displayName(n));
-        holder.subtitle.setText("ID: " + n.getUserId() + " | Num: " + n.getNodeNum());
+        NodeInfo n = getItem(position);
+        holder.title.setText(displayName(n, holder.itemView.getContext()));
+        holder.subtitle.setText(holder.itemView.getContext().getString(
+                R.string.nodes_subtitle_format,
+                n.getUserId() == null ? "—" : n.getUserId(),
+                String.valueOf(n.getNodeNum())));
 
         StringBuilder meta = new StringBuilder();
-        if (n.getBatteryLevel() >= 0) meta.append("Batt: ").append(n.getBatteryLevel()).append("%  ");
-        meta.append("SNR: ").append(String.format("%.1f", n.getSnr()));
-        if (n.getHopsAway() != null) meta.append("  Hops: ").append(n.getHopsAway());
-        if (n.getChannel() != null) meta.append("  Ch: ").append(n.getChannel());
-        if (n.isViaMqtt()) meta.append("  via MQTT");
+        if (n.getBatteryLevel() >= 0) {
+            meta.append(holder.itemView.getContext().getString(R.string.nodes_meta_battery, n.getBatteryLevel()));
+            meta.append("  ");
+        }
+        meta.append(holder.itemView.getContext().getString(R.string.nodes_meta_snr, n.getSnr()));
+        if (n.getHopsAway() != null) {
+            meta.append("  ");
+            meta.append(holder.itemView.getContext().getString(R.string.nodes_meta_hops, n.getHopsAway()));
+        }
+        if (n.getChannel() != null) {
+            meta.append("  ");
+            meta.append(holder.itemView.getContext().getString(R.string.nodes_meta_channel, n.getChannel()));
+        }
+        if (n.isViaMqtt()) {
+            meta.append("  ");
+            meta.append(holder.itemView.getContext().getString(R.string.nodes_meta_via_mqtt));
+        }
         holder.meta.setText(meta.toString());
 
         if (n.getLatitude() != 0 || n.getLongitude() != 0) {
-            holder.coords.setText(
-                    String.format("Lat: %.5f  Lon: %.5f", n.getLatitude(), n.getLongitude())
-            );
+            holder.coords.setText(holder.itemView.getContext().getString(
+                    R.string.nodes_coords_format, n.getLatitude(), n.getLongitude()));
             holder.coords.setVisibility(View.VISIBLE);
         } else {
             holder.coords.setVisibility(View.GONE);
         }
 
-        holder.time.setText("last heard: " + (n.getLastHeard()));
+        holder.time.setText(holder.itemView.getContext().getString(
+                R.string.nodes_last_heard_format, n.getLastHeard()));
     }
 
-    @Override
-    public int getItemCount() {
-        return items.size();
-    }
-
-    void submit(List<NodeInfo> list) {
-        items.clear();
-        if (list != null) {
-            items.addAll(list);
-        }
-        notifyDataSetChanged();
-    }
-
-    private String displayName(NodeInfo n) {
+    private static String displayName(NodeInfo n, android.content.Context ctx) {
         if (n.getLongName() != null && !n.getLongName().isEmpty()) return n.getLongName();
         if (n.getShortName() != null && !n.getShortName().isEmpty()) return n.getShortName();
         if (n.getUserId() != null && !n.getUserId().isEmpty()) return n.getUserId();
-        return "Node " + n.getNodeNum();
+        return ctx.getString(R.string.nodes_default_name, n.getNodeNum());
     }
 
     static class VH extends RecyclerView.ViewHolder {

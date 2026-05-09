@@ -8,9 +8,6 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -20,89 +17,62 @@ import androidx.fragment.app.Fragment;
 
 import com.example.meshtastic.R;
 import com.example.meshtastic.data.repository.MeshConnectionRepository;
+import com.example.meshtastic.databinding.FragmentConnectionBinding;
 
 /**
  * Фрагмент для поиска и подключения к устройству Meshtastic через BLE.
  */
 public class ConnectionFragment extends Fragment {
-    private static final String TAG = "ConnectionFragment";
-    
-    // Коды запроса разрешений
     private static final int REQUEST_BLUETOOTH_PERMISSIONS = 100;
     private static final int REQUEST_LOCATION_PERMISSION = 101;
-    
+
+    private FragmentConnectionBinding binding;
     private MeshConnectionRepository repo;
-    private TextView statusText;
-    private TextView deviceListText;
-    private TextView lastRxText;
-    private Button scanButton;
-    private Button connectButton;
-    private Button sendTestButton;
-    private ProgressBar progressBar;
-    
     private BluetoothDevice selectedDevice;
-    
+
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_connection, container, false);
-        
-        // Инициализация UI элементов
-        statusText = view.findViewById(R.id.status_text);
-        deviceListText = view.findViewById(R.id.device_list_text);
-        lastRxText = view.findViewById(R.id.last_rx_text);
-        scanButton = view.findViewById(R.id.scan_button);
-        connectButton = view.findViewById(R.id.connect_button);
-        sendTestButton = view.findViewById(R.id.send_test_button);
-        progressBar = view.findViewById(R.id.progress_bar);
-        
-        // Репозиторий соединения (единый на всё приложение)
+        binding = FragmentConnectionBinding.inflate(inflater, container, false);
+
         repo = MeshConnectionRepository.getInstance(requireContext());
-        
-        // Подписки на состояние (подписываем один раз)
+
         repo.getStatusText().observe(getViewLifecycleOwner(), text -> {
-            statusText.setText(text);
-            progressBar.setVisibility(View.GONE);
-            connectButton.setEnabled(true);
-            // Разрешаем отправку теста только когда есть связь
-            sendTestButton.setEnabled(text != null && text.startsWith("Подключено"));
+            if (binding == null) return;
+            binding.statusText.setText(text);
+            binding.progressBar.setVisibility(View.GONE);
+            binding.connectButton.setEnabled(true);
+            binding.sendTestButton.setEnabled(text != null && text.startsWith("Подключено"));
         });
 
         repo.getLastRx().observe(getViewLifecycleOwner(), data -> {
+            if (binding == null) return;
             if (data == null || data.length == 0) {
-                lastRxText.setText("—");
+                binding.lastRxText.setText(R.string.connection_dash);
             } else {
-                lastRxText.setText(toHex(data));
+                binding.lastRxText.setText(toHex(data));
             }
         });
 
-        // Настройка кнопок
-        scanButton.setOnClickListener(v -> scanForDevices());
-        connectButton.setOnClickListener(v -> connectToDevice());
-        connectButton.setEnabled(false);
-        sendTestButton.setEnabled(false);
-        sendTestButton.setOnClickListener(v -> sendTest());
-        
-        // Проверка разрешений при создании
+        binding.scanButton.setOnClickListener(v -> scanForDevices());
+        binding.connectButton.setOnClickListener(v -> connectToDevice());
+        binding.connectButton.setEnabled(false);
+        binding.sendTestButton.setEnabled(false);
+        binding.sendTestButton.setOnClickListener(v -> sendTest());
+
         checkPermissions();
-        
-        // Проверка состояния Bluetooth
         updateBluetoothStatus();
-        
-        return view;
+
+        return binding.getRoot();
     }
-    
-    /**
-     * Проверяет и запрашивает необходимые разрешения.
-     */
+
     private void checkPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            // Android 12+ требует новые разрешения
-            if (ContextCompat.checkSelfPermission(requireContext(), 
+            if (ContextCompat.checkSelfPermission(requireContext(),
                     Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(requireContext(), 
+                ContextCompat.checkSelfPermission(requireContext(),
                     Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-                
+
                 ActivityCompat.requestPermissions(requireActivity(),
                         new String[]{
                                 Manifest.permission.BLUETOOTH_SCAN,
@@ -111,22 +81,21 @@ public class ConnectionFragment extends Fragment {
                         REQUEST_BLUETOOTH_PERMISSIONS);
             }
         }
-        
-        // Разрешение на местоположение необходимо для поиска устройств
-        if (ContextCompat.checkSelfPermission(requireContext(), 
+
+        if (ContextCompat.checkSelfPermission(requireContext(),
                 Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(requireActivity(),
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                     REQUEST_LOCATION_PERMISSION);
         }
     }
-    
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        
-        if (requestCode == REQUEST_BLUETOOTH_PERMISSIONS || 
+
+        if (requestCode == REQUEST_BLUETOOTH_PERMISSIONS ||
             requestCode == REQUEST_LOCATION_PERMISSION) {
             boolean allGranted = true;
             for (int result : grantResults) {
@@ -135,107 +104,95 @@ public class ConnectionFragment extends Fragment {
                     break;
                 }
             }
-            
+
             if (allGranted) {
-                Toast.makeText(requireContext(), "Разрешения предоставлены", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), R.string.connection_toast_permissions_granted, Toast.LENGTH_SHORT).show();
                 updateBluetoothStatus();
             } else {
-                Toast.makeText(requireContext(), 
-                        "Необходимы разрешения для работы Bluetooth", 
+                Toast.makeText(requireContext(),
+                        R.string.connection_toast_permissions_required,
                         Toast.LENGTH_LONG).show();
             }
         }
     }
-    
-    /**
-     * Обновляет статус Bluetooth и отображает его в UI.
-     */
+
     private void updateBluetoothStatus() {
-        if (repo == null) {
-            return;
-        }
-        
+        if (repo == null || binding == null) return;
+
         if (!repo.isBluetoothEnabled()) {
-            statusText.setText("Bluetooth выключен. Включите Bluetooth в настройках.");
-            statusText.setTextColor(ContextCompat.getColor(requireContext(), 
+            binding.statusText.setText(R.string.connection_bluetooth_off);
+            binding.statusText.setTextColor(ContextCompat.getColor(requireContext(),
                     android.R.color.holo_red_dark));
-            scanButton.setEnabled(false);
+            binding.scanButton.setEnabled(false);
         } else {
-            statusText.setText("Bluetooth включен. Готов к поиску устройств.");
-            statusText.setTextColor(ContextCompat.getColor(requireContext(), 
+            binding.statusText.setText(R.string.connection_bluetooth_on);
+            binding.statusText.setTextColor(ContextCompat.getColor(requireContext(),
                     android.R.color.holo_green_dark));
-            scanButton.setEnabled(true);
+            binding.scanButton.setEnabled(true);
         }
-        
-        connectButton.setText("Подключиться");
-        sendTestButton.setEnabled(false);
+
+        binding.connectButton.setText(R.string.connection_btn_connect);
+        binding.sendTestButton.setEnabled(false);
     }
-    
-    /**
-     * Ищет BLE устройства Meshtastic.
-     */
+
     private void scanForDevices() {
         if (!repo.isBluetoothEnabled()) {
-            Toast.makeText(requireContext(), 
-                    "Включите Bluetooth", 
+            Toast.makeText(requireContext(),
+                    R.string.connection_toast_enable_bt,
                     Toast.LENGTH_SHORT).show();
             return;
         }
-        
-        progressBar.setVisibility(View.VISIBLE);
-        scanButton.setEnabled(false);
-        deviceListText.setText("Поиск BLE устройств Meshtastic...");
-        connectButton.setEnabled(false);
+
+        binding.progressBar.setVisibility(View.VISIBLE);
+        binding.scanButton.setEnabled(false);
+        binding.deviceListText.setText(R.string.connection_status_scanning);
+        binding.connectButton.setEnabled(false);
 
         repo.startScan();
 
-        // Подпишемся на список устройств и обновим текст
         repo.getDevices().observe(getViewLifecycleOwner(), devices -> {
-            deviceListText.setText("");
+            if (binding == null) return;
+            binding.deviceListText.setText("");
             if (devices == null || devices.isEmpty()) {
-                deviceListText.setText("Поиск…");
-                connectButton.setEnabled(false);
+                binding.deviceListText.setText(R.string.connection_status_searching);
+                binding.connectButton.setEnabled(false);
                 return;
             }
             int i = 1;
             for (BluetoothDevice d : devices) {
-                String name = d.getName() != null ? d.getName() : "Неизвестное устройство";
-                deviceListText.append(i + ". " + name + "\n   " + d.getAddress() + "\n\n");
+                String name = d.getName() != null ? d.getName() : getString(R.string.connection_device_unknown);
+                binding.deviceListText.append(getString(R.string.connection_device_line, i, name, d.getAddress()));
                 i++;
             }
-            // выбираем первое найденное устройство
             if (selectedDevice == null) {
                 selectedDevice = devices.get(0);
                 repo.selectDevice(selectedDevice);
-                connectButton.setEnabled(true);
+                binding.connectButton.setEnabled(true);
             }
         });
 
-        // Останавливаем скан через 6 секунд
-        scanButton.postDelayed(() -> {
+        binding.scanButton.postDelayed(() -> {
+            if (binding == null) return;
             repo.stopScan();
-            progressBar.setVisibility(View.GONE);
-            scanButton.setEnabled(true);
+            binding.progressBar.setVisibility(View.GONE);
+            binding.scanButton.setEnabled(true);
             if (selectedDevice == null) {
-                deviceListText.append("Устройства не найдены. Убедитесь, что Heltec включен и рядом.\n");
+                binding.deviceListText.append(getString(R.string.connection_status_no_devices));
             }
         }, 6000);
     }
-    
-    /**
-     * Подключается к выбранному устройству.
-     */
+
     private void connectToDevice() {
         if (selectedDevice == null) {
-            Toast.makeText(requireContext(), 
-                    "Сначала выберите устройство", 
+            Toast.makeText(requireContext(),
+                    R.string.connection_toast_select_device,
                     Toast.LENGTH_SHORT).show();
             return;
         }
-        
-        progressBar.setVisibility(View.VISIBLE);
-        connectButton.setEnabled(false);
-        statusText.setText("Подключение...");
+
+        binding.progressBar.setVisibility(View.VISIBLE);
+        binding.connectButton.setEnabled(false);
+        binding.statusText.setText(R.string.connection_status_connecting);
 
         repo.selectDevice(selectedDevice);
         repo.connect();
@@ -243,14 +200,15 @@ public class ConnectionFragment extends Fragment {
 
     private void sendTest() {
         // Запрос конфигурации - устройство ВСЕГДА отвечает на want_config_id
-        // Heartbeat НЕ вызывает ответа (он только для поддержания serial-соединения)
         int configId = (int) (System.currentTimeMillis() & 0x7fffffff);
         boolean ok = repo.sendToRadio(
                 org.meshtastic.proto.MeshProtos.ToRadio.newBuilder()
                         .setWantConfigId(configId)
                         .build()
         );
-        Toast.makeText(requireContext(), ok ? "Запрос конфигурации отправлен" : "Не удалось отправить", Toast.LENGTH_SHORT).show();
+        Toast.makeText(requireContext(),
+                ok ? R.string.connection_test_sent : R.string.connection_test_failed,
+                Toast.LENGTH_SHORT).show();
     }
 
     private static String toHex(byte[] data) {
@@ -260,10 +218,11 @@ public class ConnectionFragment extends Fragment {
         }
         return sb.toString().trim();
     }
-    
+
     @Override
     public void onDestroyView() {
+        binding = null;
         super.onDestroyView();
-        // Соединение НЕ закрываем: оно общее для приложения и нужно другим экранам
+        // Соединение НЕ закрываем: оно общее для приложения и нужно другим экранам.
     }
 }

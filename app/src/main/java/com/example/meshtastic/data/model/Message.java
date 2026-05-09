@@ -1,6 +1,8 @@
 package com.example.meshtastic.data.model;
 
 import java.util.Date;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Модель текстового сообщения в mesh-сети.
@@ -11,21 +13,18 @@ public class Message {
     private String senderId; // ID узла отправителя
     private long timestamp;
     private boolean isOwnMessage; // true если сообщение отправлено с этого устройства
-    
+
     public Message() {
         this.timestamp = System.currentTimeMillis();
+        this.id = UUID.randomUUID().toString();
     }
-    
+
     public Message(String text, String senderId, boolean isOwnMessage) {
         this.text = text;
         this.senderId = senderId;
         this.isOwnMessage = isOwnMessage;
         this.timestamp = System.currentTimeMillis();
-        this.id = generateId();
-    }
-    
-    private String generateId() {
-        return senderId + "_" + timestamp;
+        this.id = UUID.randomUUID().toString();
     }
     
     // Getters and Setters
@@ -71,5 +70,22 @@ public class Message {
     
     public String getFormattedTime() {
         return new Date(timestamp).toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Message)) return false;
+        Message that = (Message) o;
+        return timestamp == that.timestamp
+                && isOwnMessage == that.isOwnMessage
+                && Objects.equals(id, that.id)
+                && Objects.equals(text, that.text)
+                && Objects.equals(senderId, that.senderId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }

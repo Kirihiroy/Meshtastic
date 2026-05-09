@@ -13,10 +13,7 @@ public class Constants {
         "Обнаружил препятствие",
         "Все хорошо"
     };
-    
-    // UUID для Bluetooth SPP
-    public static final String SPP_UUID_STRING = "00001101-0000-1000-8000-00805F9B34FB";
-    
+
     // Таймауты и интервалы (в миллисекундах)
     public static final int BLUETOOTH_CONNECTION_TIMEOUT = 10000;
     public static final int GPS_UPDATE_INTERVAL = 5000; // 5 секунд
