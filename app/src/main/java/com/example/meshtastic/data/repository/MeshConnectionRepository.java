@@ -9,6 +9,8 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.example.meshtastic.R;
 import com.example.meshtastic.bluetooth.BleManager;
+import com.example.meshtastic.crypto.E2eCipher;
+import com.example.meshtastic.crypto.E2eKeyManager;
 import com.example.meshtastic.data.model.DeviceStatus;
 import com.example.meshtastic.data.model.Message;
 import com.example.meshtastic.data.model.NodeInfo;
@@ -67,6 +69,7 @@ public class MeshConnectionRepository {
     private final MutableLiveData<List<NodeInfo>> nodes = new MutableLiveData<>(new ArrayList<>());
 
     private final MutableLiveData<List<Message>> messages = new MutableLiveData<>(new ArrayList<>());
+    private final MutableLiveData<List<Message>> e2eMessages = new MutableLiveData<>(new ArrayList<>());
 
     private final Map<Long, NodeInfo> nodeMap = new ConcurrentHashMap<>();
     private final Set<String> seenAddresses = ConcurrentHashMap.newKeySet();
@@ -75,6 +78,7 @@ public class MeshConnectionRepository {
     private long myNodeNum = 0;
 
     private final AtomicInteger packetIdGen = new AtomicInteger(new Random().nextInt());
+    private E2eKeyManager e2eKeyManager;
 
     private final MutableLiveData<DeviceStatus> deviceStatus = new MutableLiveData<>(new DeviceStatus());
 
@@ -82,6 +86,7 @@ public class MeshConnectionRepository {
         this.appContext = context.getApplicationContext();
         this.bleManager = new BleManager(appContext);
         this.statusText = new MutableLiveData<>(appContext.getString(R.string.repo_state_disconnected));
+        this.e2eKeyManager = new E2eKeyManager(appContext);
     }
 
     private String s(int resId, Object... args) {
@@ -122,6 +127,14 @@ public class MeshConnectionRepository {
 
     public LiveData<List<Message>> getMessages() {
         return messages;
+    }
+
+    public LiveData<List<Message>> getE2eMessages() {
+        return e2eMessages;
+    }
+
+    public E2eKeyManager getE2eKeyManager() {
+        return e2eKeyManager;
     }
 
     public boolean isBluetoothEnabled() {
@@ -315,6 +328,51 @@ public class MeshConnectionRepository {
     }
 
     /**
+     * Отправить E2E-зашифрованное личное сообщение конкретному узлу.
+     * Использует эфемерный ECDH (P-256) + AES-256-GCM, порт PRIVATE_APP (256).
+     */
+    public boolean sendE2eMessage(long recipientNodeNum, String recipientPubKeyHex, String text) {
+        if (state.getValue() != State.CONNECTED) return false;
+        if (text == null || text.trim().isEmpty()) return false;
+        if (e2eKeyManager == null || !e2eKeyManager.isAvailable()) return false;
+
+        try {
+            java.security.PublicKey recipientPubKey = E2eKeyManager.parsePublicKey(recipientPubKeyHex);
+            byte[] plaintext = text.trim().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            byte[] encrypted = E2eCipher.encrypt(recipientPubKey, plaintext);
+
+            MeshProtos.MeshPacket packet = MeshProtos.MeshPacket.newBuilder()
+                    .setTo((int) (recipientNodeNum & 0xFFFFFFFFL))
+                    .setDecoded(MeshProtos.Data.newBuilder()
+                            .setPortnum(Portnums.PortNum.PRIVATE_APP)
+                            .setPayload(com.google.protobuf.ByteString.copyFrom(encrypted))
+                            .setWantResponse(false)
+                            .build())
+                    .setId(nextPacketId())
+                    .setHopLimit(3)
+                    .setWantAck(true)
+                    .build();
+
+            MeshProtos.ToRadio msg = MeshProtos.ToRadio.newBuilder().setPacket(packet).build();
+            boolean sent = sendToRadio(msg);
+
+            if (sent) {
+                String senderId = String.format("!%08x", myNodeNum);
+                Message message = new Message(text.trim(), senderId, true);
+                List<Message> current = e2eMessages.getValue();
+                List<Message> updated = new ArrayList<>(current != null ? current : new ArrayList<>());
+                updated.add(message);
+                e2eMessages.postValue(updated);
+            }
+            return sent;
+        } catch (Exception e) {
+            Log.e(TAG, "E2E send failed", e);
+            statusText.postValue(s(R.string.e2e_send_failed, e.getMessage()));
+            return false;
+        }
+    }
+
+    /**
      * Применить имя канала + PSK на устройство.
      *
      * <p>PSK интерпретируется как hex (16/32 байта = 32/64 hex-символа) либо пустая строка
@@ -462,6 +520,8 @@ public class MeshConnectionRepository {
                         List<Message> updated = new ArrayList<>(current != null ? current : new ArrayList<>());
                         updated.add(message);
                         messages.postValue(updated);
+                    } else if (decoded.getPortnum() == Portnums.PortNum.PRIVATE_APP) {
+                        handleE2ePacket(packet, decoded);
                     }
                 }
                 break;
@@ -473,6 +533,39 @@ public class MeshConnectionRepository {
             default:
                 break;
         }
+    }
+
+    private void handleE2ePacket(MeshProtos.MeshPacket packet, MeshProtos.Data decoded) {
+        long fromNum = packet.getFrom() & 0xFFFFFFFFL;
+        // Пакет, который мы сами только что отправили — уже добавлен оптимистично.
+        if (fromNum != 0 && fromNum == myNodeNum) return;
+
+        String senderId = String.format("!%08x", fromNum);
+        String text;
+        boolean decryptFailed = false;
+
+        if (e2eKeyManager != null && e2eKeyManager.isAvailable()) {
+            try {
+                byte[] plaintext = E2eCipher.decrypt(
+                        e2eKeyManager.getPrivateKey(),
+                        decoded.getPayload().toByteArray());
+                text = new String(plaintext, java.nio.charset.StandardCharsets.UTF_8);
+            } catch (Exception e) {
+                Log.w(TAG, "E2E decrypt failed from " + senderId + ": " + e.getMessage());
+                text = appContext.getString(R.string.e2e_decrypt_failed);
+                decryptFailed = true;
+            }
+        } else {
+            text = appContext.getString(R.string.e2e_decrypt_failed);
+            decryptFailed = true;
+        }
+
+        Message message = new Message(text, senderId, false);
+        message.setDecryptFailed(decryptFailed);
+        List<Message> current = e2eMessages.getValue();
+        List<Message> updated = new ArrayList<>(current != null ? current : new ArrayList<>());
+        updated.add(message);
+        e2eMessages.postValue(updated);
     }
 
     private void updateDeviceStatus(java.util.function.Consumer<DeviceStatus> updater) {

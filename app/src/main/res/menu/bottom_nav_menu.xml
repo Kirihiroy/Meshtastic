@@ -20,4 +20,8 @@
         android:id="@+id/nav_settings"
         android:title="Настройки"
         android:icon="@android:drawable/ic_menu_manage" />
+    <item
+        android:id="@+id/nav_e2e"
+        android:title="@string/e2e_nav_label"
+        android:icon="@android:drawable/ic_lock_lock" />
 </menu>

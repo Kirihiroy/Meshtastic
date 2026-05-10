@@ -76,6 +76,25 @@
     <string name="chat_btn_send_desc">Отправить</string>
     <string name="chat_toast_no_connection">Нет подключения к устройству</string>
 
+    <!-- E2eDmFragment -->
+    <string name="e2e_title">E2E Личные сообщения</string>
+    <string name="e2e_subtitle">ECDH P-256 + AES-256-GCM · только адресат может расшифровать</string>
+    <string name="e2e_my_key_label">Ваш публичный ключ (передайте собеседнику):</string>
+    <string name="e2e_btn_copy">Копировать</string>
+    <string name="e2e_hint_recipient_node">Узел получателя: !aabbccdd или число</string>
+    <string name="e2e_hint_recipient_pubkey">Публичный ключ получателя (hex)</string>
+    <string name="e2e_hint_message">Сообщение (до ~100 байт)…</string>
+    <string name="e2e_btn_send_desc">Отправить E2E</string>
+    <string name="e2e_nav_label">E2E ЛС</string>
+    <string name="e2e_key_unavailable">Ключ недоступен</string>
+    <string name="e2e_key_copied">Публичный ключ скопирован</string>
+    <string name="e2e_error_no_recipient">Укажите узел получателя</string>
+    <string name="e2e_error_no_pubkey">Укажите публичный ключ получателя</string>
+    <string name="e2e_error_bad_recipient">Неверный формат: ожидается !hex или число</string>
+    <string name="e2e_send_error_toast">Ошибка отправки E2E (нет подключения или неверный ключ)</string>
+    <string name="e2e_send_failed">E2E: ошибка шифрования — %1$s</string>
+    <string name="e2e_decrypt_failed">[Не удалось расшифровать]</string>
+
     <!-- Repository messages -->
     <string name="repo_state_disconnected">Не подключено</string>
     <string name="repo_state_scanning">Сканирование BLE…</string>

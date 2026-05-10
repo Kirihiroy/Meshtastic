@@ -13,6 +13,7 @@ import androidx.fragment.app.FragmentTransaction;
 import com.example.meshtastic.databinding.ActivityMainBinding;
 import com.example.meshtastic.ui.chat.ChatFragment;
 import com.example.meshtastic.ui.connection.ConnectionFragment;
+import com.example.meshtastic.ui.e2e.E2eDmFragment;
 import com.example.meshtastic.ui.nodes.NodesFragment;
 import com.example.meshtastic.ui.settings.SettingsFragment;
 import com.example.meshtastic.ui.status.StatusFragment;
@@ -49,6 +50,9 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             } else if (item.getItemId() == R.id.nav_settings) {
                 showFragment(new SettingsFragment());
+                return true;
+            } else if (item.getItemId() == R.id.nav_e2e) {
+                showFragment(new E2eDmFragment());
                 return true;
             }
             return false;

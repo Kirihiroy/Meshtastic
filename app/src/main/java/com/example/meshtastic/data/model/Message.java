@@ -13,6 +13,7 @@ public class Message {
     private String senderId; // ID узла отправителя
     private long timestamp;
     private boolean isOwnMessage; // true если сообщение отправлено с этого устройства
+    private boolean decryptFailed; // true для E2E-пакетов, которые не удалось расшифровать
 
     public Message() {
         this.timestamp = System.currentTimeMillis();
@@ -63,9 +64,17 @@ public class Message {
     public boolean isOwnMessage() {
         return isOwnMessage;
     }
-    
+
     public void setOwnMessage(boolean ownMessage) {
         isOwnMessage = ownMessage;
+    }
+
+    public boolean isDecryptFailed() {
+        return decryptFailed;
+    }
+
+    public void setDecryptFailed(boolean decryptFailed) {
+        this.decryptFailed = decryptFailed;
     }
     
     public String getFormattedTime() {
@@ -79,6 +88,7 @@ public class Message {
         Message that = (Message) o;
         return timestamp == that.timestamp
                 && isOwnMessage == that.isOwnMessage
+                && decryptFailed == that.decryptFailed
                 && Objects.equals(id, that.id)
                 && Objects.equals(text, that.text)
                 && Objects.equals(senderId, that.senderId);
