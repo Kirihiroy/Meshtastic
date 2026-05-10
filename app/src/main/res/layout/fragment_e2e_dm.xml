@@ -108,6 +108,18 @@
 
     </LinearLayout>
 
+    <!-- Индикатор текущего получателя -->
+    <TextView
+        android:id="@+id/tv_recipient_indicator"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="6dp"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:text="@string/e2e_recipient_not_set"
+        android:background="?attr/colorSurfaceVariant" />
+
     <!-- Список сообщений -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_e2e_messages"

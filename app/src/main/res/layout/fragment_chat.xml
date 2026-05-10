@@ -4,6 +4,37 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="8dp"
+        android:background="?attr/colorSurfaceVariant">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/chat_recipient_broadcast"
+            android:textStyle="bold"
+            android:textSize="13sp" />
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tv_no_connection_banner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/chat_no_connection_banner"
+        android:gravity="center"
+        android:padding="6dp"
+        android:textColor="#FFFFFF"
+        android:background="#B00020"
+        android:textSize="12sp"
+        android:visibility="gone" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_messages"
         android:layout_width="match_parent"
@@ -26,7 +57,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:hint="Введите сообщение..."
+            android:hint="@string/chat_hint_message"
             android:inputType="textMultiLine|textCapSentences"
             android:maxLines="4"
             android:imeOptions="actionSend" />
@@ -38,7 +69,7 @@
             android:layout_marginStart="8dp"
             android:src="@android:drawable/ic_menu_send"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Отправить" />
+            android:contentDescription="@string/chat_btn_send_desc" />
 
     </LinearLayout>
 

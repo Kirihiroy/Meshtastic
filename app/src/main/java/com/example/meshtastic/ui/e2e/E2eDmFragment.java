@@ -4,6 +4,8 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,6 +27,7 @@ public class E2eDmFragment extends Fragment {
     private FragmentE2eDmBinding binding;
     private MeshConnectionRepository repo;
     private ChatAdapter adapter;
+    private MeshConnectionRepository.State currentState = MeshConnectionRepository.State.DISCONNECTED;
 
     @Nullable
     @Override
@@ -70,7 +73,45 @@ public class E2eDmFragment extends Fragment {
             });
         });
 
+        repo.getState().observe(getViewLifecycleOwner(), state -> {
+            currentState = state;
+            updateInputState();
+        });
+
+        TextWatcher recipientWatcher = new TextWatcher() {
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            public void onTextChanged(CharSequence s, int start, int before, int count) { updateInputState(); }
+            public void afterTextChanged(Editable s) {}
+        };
+        binding.etRecipientNode.addTextChangedListener(recipientWatcher);
+        binding.etRecipientPubkey.addTextChangedListener(recipientWatcher);
+
         binding.btnE2eSend.setOnClickListener(v -> sendMessage());
+    }
+
+    private void updateInputState() {
+        if (binding == null) return;
+        boolean connected = currentState == MeshConnectionRepository.State.CONNECTED;
+        String nodeText = getText(binding.etRecipientNode.getText());
+        String pubKeyText = getText(binding.etRecipientPubkey.getText());
+        boolean hasRecipient = !nodeText.isEmpty() && !pubKeyText.isEmpty();
+
+        boolean canSend = connected && hasRecipient;
+        binding.etE2eMessage.setEnabled(canSend);
+        binding.btnE2eSend.setEnabled(canSend);
+
+        if (!connected) {
+            binding.etE2eMessage.setHint(getString(R.string.e2e_hint_msg_no_connection));
+        } else if (!hasRecipient) {
+            binding.etE2eMessage.setHint(getString(R.string.e2e_hint_msg_no_recipient));
+        } else {
+            binding.etE2eMessage.setHint(getString(R.string.e2e_hint_message));
+        }
+
+        String label = nodeText.isEmpty()
+                ? getString(R.string.e2e_recipient_not_set)
+                : getString(R.string.e2e_to_label, nodeText);
+        binding.tvRecipientIndicator.setText(label);
     }
 
     private void sendMessage() {
@@ -91,7 +132,6 @@ public class E2eDmFragment extends Fragment {
 
         long recipientNum;
         try {
-            // Поддержка форматов: !aabbccdd (hex) или число
             if (nodeText.startsWith("!")) {
                 recipientNum = Long.parseLong(nodeText.substring(1), 16);
             } else {
@@ -110,7 +150,7 @@ public class E2eDmFragment extends Fragment {
         }
     }
 
-    private static String getText(android.text.Editable editable) {
+    private static String getText(Editable editable) {
         return editable != null ? editable.toString().trim() : "";
     }
 

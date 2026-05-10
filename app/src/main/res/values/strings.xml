@@ -73,10 +73,17 @@
 
     <!-- ChatFragment -->
     <string name="chat_hint_message">Введите сообщение...</string>
+    <string name="chat_hint_not_connected">Нет подключения…</string>
     <string name="chat_btn_send_desc">Отправить</string>
     <string name="chat_toast_no_connection">Нет подключения к устройству</string>
+    <string name="chat_recipient_broadcast">Широковещательный канал (все узлы)</string>
+    <string name="chat_no_connection_banner">Нет подключения к устройству. Ввод недоступен.</string>
 
     <!-- E2eDmFragment -->
+    <string name="e2e_to_label">Кому: %1$s</string>
+    <string name="e2e_recipient_not_set">Получатель не указан</string>
+    <string name="e2e_hint_msg_no_connection">Нет подключения…</string>
+    <string name="e2e_hint_msg_no_recipient">Укажите получателя выше</string>
     <string name="e2e_title">E2E Личные сообщения</string>
     <string name="e2e_subtitle">ECDH P-256 + AES-256-GCM · только адресат может расшифровать</string>
     <string name="e2e_my_key_label">Ваш публичный ключ (передайте собеседнику):</string>

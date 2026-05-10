@@ -53,6 +53,8 @@ public class ChatFragment extends Fragment {
             }
         });
 
+        repo.getState().observe(getViewLifecycleOwner(), this::applyConnectionState);
+
         repo.getMessages().observe(getViewLifecycleOwner(), msgs -> {
             adapter.submitList(msgs, () -> {
                 if (binding != null && msgs != null && !msgs.isEmpty()) {
@@ -60,6 +62,16 @@ public class ChatFragment extends Fragment {
                 }
             });
         });
+    }
+
+    private void applyConnectionState(MeshConnectionRepository.State state) {
+        boolean connected = state == MeshConnectionRepository.State.CONNECTED;
+        binding.etMessage.setEnabled(connected);
+        binding.btnSend.setEnabled(connected);
+        binding.etMessage.setHint(connected
+                ? getString(R.string.chat_hint_message)
+                : getString(R.string.chat_hint_not_connected));
+        binding.tvNoConnectionBanner.setVisibility(connected ? View.GONE : View.VISIBLE);
     }
 
     @Override
