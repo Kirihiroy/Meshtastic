@@ -70,6 +70,26 @@ public class MeshConnectionRepository {
 
     private final MutableLiveData<List<Message>> messages = new MutableLiveData<>(new ArrayList<>());
     private final MutableLiveData<List<Message>> e2eMessages = new MutableLiveData<>(new ArrayList<>());
+    private final Object messagesLock = new Object();
+    private final Object e2eMessagesLock = new Object();
+
+    private void appendMessage(Message message) {
+        synchronized (messagesLock) {
+            List<Message> current = messages.getValue();
+            List<Message> updated = new ArrayList<>(current != null ? current : new ArrayList<>());
+            updated.add(message);
+            messages.postValue(updated);
+        }
+    }
+
+    private void appendE2eMessage(Message message) {
+        synchronized (e2eMessagesLock) {
+            List<Message> current = e2eMessages.getValue();
+            List<Message> updated = new ArrayList<>(current != null ? current : new ArrayList<>());
+            updated.add(message);
+            e2eMessages.postValue(updated);
+        }
+    }
 
     private final Map<Long, NodeInfo> nodeMap = new ConcurrentHashMap<>();
     private final Set<String> seenAddresses = ConcurrentHashMap.newKeySet();
@@ -318,11 +338,7 @@ public class MeshConnectionRepository {
         boolean sent = sendToRadio(msg);
         if (sent) {
             String senderId = String.format("!%08x", myNodeNum);
-            Message message = new Message(text.trim(), senderId, true);
-            List<Message> current = messages.getValue();
-            List<Message> updated = new ArrayList<>(current != null ? current : new ArrayList<>());
-            updated.add(message);
-            messages.postValue(updated);
+            appendMessage(new Message(text.trim(), senderId, true));
         }
         return sent;
     }
@@ -358,11 +374,7 @@ public class MeshConnectionRepository {
 
             if (sent) {
                 String senderId = String.format("!%08x", myNodeNum);
-                Message message = new Message(text.trim(), senderId, true);
-                List<Message> current = e2eMessages.getValue();
-                List<Message> updated = new ArrayList<>(current != null ? current : new ArrayList<>());
-                updated.add(message);
-                e2eMessages.postValue(updated);
+                appendE2eMessage(new Message(text.trim(), senderId, true));
             }
             return sent;
         } catch (Exception e) {
@@ -515,11 +527,7 @@ public class MeshConnectionRepository {
                         long fromNum = packet.getFrom() & 0xFFFFFFFFL;
                         String senderId = String.format("!%08x", fromNum);
                         boolean isOwn = (fromNum != 0 && fromNum == myNodeNum);
-                        Message message = new Message(text, senderId, isOwn);
-                        List<Message> current = messages.getValue();
-                        List<Message> updated = new ArrayList<>(current != null ? current : new ArrayList<>());
-                        updated.add(message);
-                        messages.postValue(updated);
+                        appendMessage(new Message(text, senderId, isOwn));
                     } else if (decoded.getPortnum() == Portnums.PortNum.PRIVATE_APP) {
                         handleE2ePacket(packet, decoded);
                     }
@@ -562,10 +570,7 @@ public class MeshConnectionRepository {
 
         Message message = new Message(text, senderId, false);
         message.setDecryptFailed(decryptFailed);
-        List<Message> current = e2eMessages.getValue();
-        List<Message> updated = new ArrayList<>(current != null ? current : new ArrayList<>());
-        updated.add(message);
-        e2eMessages.postValue(updated);
+        appendE2eMessage(message);
     }
 
     private void updateDeviceStatus(java.util.function.Consumer<DeviceStatus> updater) {

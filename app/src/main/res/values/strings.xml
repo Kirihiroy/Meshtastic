@@ -78,6 +78,10 @@
     <string name="chat_toast_no_connection">Нет подключения к устройству</string>
     <string name="chat_recipient_broadcast">Широковещательный канал (все узлы)</string>
     <string name="chat_no_connection_banner">Нет подключения к устройству. Ввод недоступен.</string>
+    <string name="chat_empty_state">Нет сообщений.\nОтправьте первое!</string>
+    <string name="chat_date_today">Сегодня</string>
+    <string name="chat_date_yesterday">Вчера</string>
+    <string name="chat_copied">Скопировано</string>
 
     <!-- E2eDmFragment -->
     <string name="e2e_to_label">Кому: %1$s</string>
@@ -101,6 +105,7 @@
     <string name="e2e_send_error_toast">Ошибка отправки E2E (нет подключения или неверный ключ)</string>
     <string name="e2e_send_failed">E2E: ошибка шифрования — %1$s</string>
     <string name="e2e_decrypt_failed">[Не удалось расшифровать]</string>
+    <string name="e2e_empty_state">Нет E2E-сообщений.\nУкажите получателя и отправьте первое.</string>
 
     <!-- Repository messages -->
     <string name="repo_state_disconnected">Не подключено</string>

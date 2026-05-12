@@ -18,9 +18,17 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.example.meshtastic.R;
 import com.example.meshtastic.crypto.E2eKeyManager;
+import com.example.meshtastic.data.model.Message;
 import com.example.meshtastic.data.repository.MeshConnectionRepository;
 import com.example.meshtastic.databinding.FragmentE2eDmBinding;
 import com.example.meshtastic.ui.chat.ChatAdapter;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 
 public class E2eDmFragment extends Fragment {
 
@@ -66,11 +74,16 @@ public class E2eDmFragment extends Fragment {
         binding.rvE2eMessages.setAdapter(adapter);
 
         repo.getE2eMessages().observe(getViewLifecycleOwner(), msgs -> {
-            adapter.submitList(msgs, () -> {
-                if (binding != null && msgs != null && !msgs.isEmpty()) {
-                    binding.rvE2eMessages.scrollToPosition(msgs.size() - 1);
+            List<ChatAdapter.ChatListItem> displayList = buildDisplayList(msgs);
+            adapter.submitList(displayList, () -> {
+                if (binding != null && !displayList.isEmpty()) {
+                    binding.rvE2eMessages.scrollToPosition(displayList.size() - 1);
                 }
             });
+            if (binding != null) {
+                binding.tvE2eEmpty.setVisibility(
+                        (msgs == null || msgs.isEmpty()) ? View.VISIBLE : View.GONE);
+            }
         });
 
         repo.getState().observe(getViewLifecycleOwner(), state -> {
@@ -152,6 +165,44 @@ public class E2eDmFragment extends Fragment {
 
     private static String getText(Editable editable) {
         return editable != null ? editable.toString().trim() : "";
+    }
+
+    private List<ChatAdapter.ChatListItem> buildDisplayList(@Nullable List<Message> messages) {
+        List<ChatAdapter.ChatListItem> items = new ArrayList<>();
+        if (messages == null || messages.isEmpty()) return items;
+        String lastDate = null;
+        String lastSender = null;
+        SimpleDateFormat dateFmt = new SimpleDateFormat("d MMM yyyy", new Locale("ru"));
+        for (Message msg : messages) {
+            String date = getDateLabel(msg.getTimestamp(), dateFmt);
+            if (!date.equals(lastDate)) {
+                items.add(ChatAdapter.ChatListItem.forDateHeader(date));
+                lastDate = date;
+                lastSender = null;
+            }
+            boolean grouped = !msg.isOwnMessage()
+                    && msg.getSenderId() != null
+                    && msg.getSenderId().equals(lastSender);
+            items.add(ChatAdapter.ChatListItem.forMessage(msg, grouped));
+            lastSender = msg.getSenderId();
+        }
+        return items;
+    }
+
+    private String getDateLabel(long timestamp, SimpleDateFormat dateFmt) {
+        Calendar today = Calendar.getInstance();
+        Calendar msgDay = Calendar.getInstance();
+        msgDay.setTimeInMillis(timestamp);
+        if (today.get(Calendar.YEAR) == msgDay.get(Calendar.YEAR)
+                && today.get(Calendar.DAY_OF_YEAR) == msgDay.get(Calendar.DAY_OF_YEAR)) {
+            return getString(R.string.chat_date_today);
+        }
+        today.add(Calendar.DAY_OF_YEAR, -1);
+        if (today.get(Calendar.YEAR) == msgDay.get(Calendar.YEAR)
+                && today.get(Calendar.DAY_OF_YEAR) == msgDay.get(Calendar.DAY_OF_YEAR)) {
+            return getString(R.string.chat_date_yesterday);
+        }
+        return dateFmt.format(new Date(timestamp));
     }
 
     @Override

@@ -12,14 +12,27 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.example.meshtastic.R;
+import com.example.meshtastic.data.model.Message;
+import com.example.meshtastic.data.model.NodeInfo;
 import com.example.meshtastic.data.repository.MeshConnectionRepository;
 import com.example.meshtastic.databinding.FragmentChatBinding;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 public class ChatFragment extends Fragment {
 
     private FragmentChatBinding binding;
     private MeshConnectionRepository repo;
     private ChatAdapter adapter;
+
+    private static final SimpleDateFormat DATE_FMT = new SimpleDateFormat("d MMM yyyy", new Locale("ru"));
 
     @Nullable
     @Override
@@ -55,13 +68,67 @@ public class ChatFragment extends Fragment {
 
         repo.getState().observe(getViewLifecycleOwner(), this::applyConnectionState);
 
+        repo.getNodes().observe(getViewLifecycleOwner(), nodes -> {
+            Map<Long, NodeInfo> map = new HashMap<>();
+            if (nodes != null) {
+                for (NodeInfo n : nodes) map.put(n.getNodeNum(), n);
+            }
+            adapter.updateNodeMap(map);
+        });
+
         repo.getMessages().observe(getViewLifecycleOwner(), msgs -> {
-            adapter.submitList(msgs, () -> {
-                if (binding != null && msgs != null && !msgs.isEmpty()) {
-                    binding.rvMessages.scrollToPosition(msgs.size() - 1);
+            List<ChatAdapter.ChatListItem> displayList = buildDisplayList(msgs);
+            adapter.submitList(displayList, () -> {
+                if (binding != null && !displayList.isEmpty()) {
+                    binding.rvMessages.scrollToPosition(displayList.size() - 1);
                 }
             });
+            if (binding != null) {
+                binding.tvEmptyChat.setVisibility(
+                        (msgs == null || msgs.isEmpty()) ? View.VISIBLE : View.GONE);
+            }
         });
+    }
+
+    private List<ChatAdapter.ChatListItem> buildDisplayList(@Nullable List<Message> messages) {
+        List<ChatAdapter.ChatListItem> items = new ArrayList<>();
+        if (messages == null || messages.isEmpty()) return items;
+
+        String lastDate = null;
+        String lastSender = null;
+
+        for (Message msg : messages) {
+            String date = getDateLabel(msg.getTimestamp());
+            if (!date.equals(lastDate)) {
+                items.add(ChatAdapter.ChatListItem.forDateHeader(date));
+                lastDate = date;
+                lastSender = null;
+            }
+            boolean grouped = !msg.isOwnMessage()
+                    && msg.getSenderId() != null
+                    && msg.getSenderId().equals(lastSender);
+            items.add(ChatAdapter.ChatListItem.forMessage(msg, grouped));
+            lastSender = msg.getSenderId();
+        }
+        return items;
+    }
+
+    private String getDateLabel(long timestamp) {
+        Calendar today = Calendar.getInstance();
+        Calendar msgDay = Calendar.getInstance();
+        msgDay.setTimeInMillis(timestamp);
+
+        if (isSameDay(today, msgDay)) return getString(R.string.chat_date_today);
+
+        today.add(Calendar.DAY_OF_YEAR, -1);
+        if (isSameDay(today, msgDay)) return getString(R.string.chat_date_yesterday);
+
+        return DATE_FMT.format(new Date(timestamp));
+    }
+
+    private static boolean isSameDay(Calendar a, Calendar b) {
+        return a.get(Calendar.YEAR) == b.get(Calendar.YEAR)
+                && a.get(Calendar.DAY_OF_YEAR) == b.get(Calendar.DAY_OF_YEAR);
     }
 
     private void applyConnectionState(MeshConnectionRepository.State state) {

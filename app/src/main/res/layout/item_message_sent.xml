@@ -12,13 +12,14 @@
         android:orientation="vertical"
         android:background="@drawable/bg_message_sent"
         android:paddingHorizontal="12dp"
-        android:paddingVertical="8dp">
+        android:paddingVertical="8dp"
+        android:maxWidth="280dp">
 
         <TextView
             android:id="@+id/tv_message_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/bubble_sent_text"
             android:textSize="15sp" />
 
         <TextView
@@ -26,7 +27,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="end"
-            android:textColor="#CCFFFFFF"
+            android:textColor="@color/bubble_sent_time"
             android:textSize="11sp"
             android:paddingTop="2dp" />
 

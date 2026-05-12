@@ -12,4 +12,13 @@
     <color name="app_on_surface">#E6EDF3</color>
     <color name="app_on_surface_muted">#9AA4B2</color>
     <color name="app_outline">#2A3444</color>
+
+    <!-- Chat bubbles -->
+    <color name="bubble_sent_bg">#1976D2</color>
+    <color name="bubble_sent_text">#FFFFFF</color>
+    <color name="bubble_sent_time">#CCFFFFFF</color>
+    <color name="bubble_received_bg">#E0E0E0</color>
+    <color name="bubble_received_text">#212121</color>
+    <color name="bubble_received_time">#757575</color>
+    <color name="bubble_sender">#1976D2</color>
 </resources>
