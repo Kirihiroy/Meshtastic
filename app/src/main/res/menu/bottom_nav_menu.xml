@@ -10,7 +10,7 @@
         android:icon="@android:drawable/ic_menu_info_details" />
     <item
         android:id="@+id/nav_nodes"
-        android:title="Узлы"
+        android:title="@string/nav_nodes"
         android:icon="@android:drawable/ic_menu_mapmode" />
     <item
         android:id="@+id/nav_chat"

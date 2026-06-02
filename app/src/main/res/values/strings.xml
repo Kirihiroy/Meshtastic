@@ -39,9 +39,12 @@
     <string name="status_label_data_source">Данные берутся из protobuf FromRadio: my_info, node_info, config, packet и др.</string>
 
     <!-- NodesFragment -->
-    <string name="nodes_title">Карта узлов</string>
+    <string name="nav_nodes">Ноды</string>
+    <string name="nodes_title">Ноды</string>
     <string name="nodes_subtitle">Сводка по найденным участникам сети</string>
     <string name="nodes_empty">Нет узлов. Подключитесь и дождитесь пакетов FromRadio.</string>
+    <string name="nodes_count_format">(онлайн %1$d / показано %2$d / всего %3$d)</string>
+    <string name="nodes_filter_hint">Фильтр</string>
     <string name="nodes_subtitle_format">ID: %1$s | Num: %2$s</string>
     <string name="nodes_meta_battery">Batt: %1$d%%</string>
     <string name="nodes_meta_snr">SNR: %1$.1f</string>
@@ -51,6 +54,30 @@
     <string name="nodes_coords_format">Lat: %1$.5f  Lon: %2$.5f</string>
     <string name="nodes_last_heard_format">last heard: %1$d</string>
     <string name="nodes_default_name">Node %1$d</string>
+
+    <!-- Карточка ноды (новый дизайн) -->
+    <string name="node_default_name_format">Meshtastic %1$s</string>
+    <string name="node_id_format">!%1$s</string>
+    <string name="node_pwr_format">PWR %1$.2fV</string>
+    <string name="node_battery_percent_format">%1$d%%</string>
+    <string name="node_chutil_format">ChUtil %1$.1f%%</string>
+    <string name="node_airutil_format">AirUtil %1$.1f%%</string>
+    <string name="node_altitude_format">Высота %1$d m MSL</string>
+    <string name="last_seen_unknown">Неизвестно</string>
+    <string name="last_seen_just_now">только что</string>
+    <string name="last_seen_min_format">%1$d мин назад</string>
+    <string name="last_seen_hr_format">%1$d ч назад</string>
+    <string name="last_seen_day_format">%1$d дн назад</string>
+    <string name="node_value_dash">—</string>
+    <string name="cd_lock">PSK</string>
+    <string name="cd_mqtt_off">Без MQTT</string>
+    <string name="cd_router">Тип устройства</string>
+    <string name="cd_role">Роль</string>
+    <string name="cd_node_id">ID ноды</string>
+    <string name="cd_antenna">Последний приём</string>
+    <string name="cd_search">Поиск</string>
+    <string name="cd_sort">Сортировка</string>
+    <string name="cd_logo">Meshtastic</string>
 
     <!-- SettingsFragment -->
     <string name="settings_title">Панель конфигурации</string>

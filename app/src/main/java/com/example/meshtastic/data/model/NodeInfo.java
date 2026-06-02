@@ -19,6 +19,15 @@ public class NodeInfo {
     private Integer hopsAway;         // Кол-во хопов, если есть
     private Integer channel;          // Индекс канала, если не основной
 
+    // Расширенные поля для карточки в стиле оригинального Meshtastic-Android
+    private String hwModel;           // Модель железа: HELTEC_V3, PORTDUINO, ...
+    private String role;              // Роль ноды: CLIENT, ROUTER_LATE, ...
+    private float voltage = -1f;      // Напряжение батареи в вольтах, -1 если неизвестно
+    private float chUtilization = -1f;// Загрузка канала в %, -1 если неизвестно
+    private float airUtilTx = -1f;    // AirUtilTx в %, -1 если неизвестно
+    private Integer altitude;         // Высота, м MSL (null если неизвестно)
+    private boolean hasPsk = true;    // Канал зашифрован PSK (по умолчанию true)
+
     public long getNodeNum() {
         return nodeNum;
     }
@@ -115,6 +124,27 @@ public class NodeInfo {
         this.channel = channel;
     }
 
+    public String getHwModel() { return hwModel; }
+    public void setHwModel(String hwModel) { this.hwModel = hwModel; }
+
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
+
+    public float getVoltage() { return voltage; }
+    public void setVoltage(float voltage) { this.voltage = voltage; }
+
+    public float getChUtilization() { return chUtilization; }
+    public void setChUtilization(float chUtilization) { this.chUtilization = chUtilization; }
+
+    public float getAirUtilTx() { return airUtilTx; }
+    public void setAirUtilTx(float airUtilTx) { this.airUtilTx = airUtilTx; }
+
+    public Integer getAltitude() { return altitude; }
+    public void setAltitude(Integer altitude) { this.altitude = altitude; }
+
+    public boolean isHasPsk() { return hasPsk; }
+    public void setHasPsk(boolean hasPsk) { this.hasPsk = hasPsk; }
+
     /** Идентичность узла — по nodeNum (стабильный ключ из протокола). */
     @Override
     public boolean equals(Object o) {
@@ -128,11 +158,18 @@ public class NodeInfo {
                 && batteryLevel == that.batteryLevel
                 && lastHeard == that.lastHeard
                 && viaMqtt == that.viaMqtt
+                && Float.compare(that.voltage, voltage) == 0
+                && Float.compare(that.chUtilization, chUtilization) == 0
+                && Float.compare(that.airUtilTx, airUtilTx) == 0
+                && hasPsk == that.hasPsk
                 && Objects.equals(userId, that.userId)
                 && Objects.equals(longName, that.longName)
                 && Objects.equals(shortName, that.shortName)
                 && Objects.equals(hopsAway, that.hopsAway)
-                && Objects.equals(channel, that.channel);
+                && Objects.equals(channel, that.channel)
+                && Objects.equals(hwModel, that.hwModel)
+                && Objects.equals(role, that.role)
+                && Objects.equals(altitude, that.altitude);
     }
 
     @Override

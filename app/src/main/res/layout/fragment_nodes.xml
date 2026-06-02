@@ -1,55 +1,119 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="@color/app_background"
-    android:padding="12dp">
+    android:orientation="vertical"
+    android:paddingHorizontal="16dp"
+    android:paddingTop="16dp">
 
-    <TextView
+    <!-- Заголовок: лого + "Ноды" -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Карта узлов"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:textColor="@color/app_on_surface"
-        android:layout_marginBottom="4dp" />
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Сводка по найденным участникам сети"
-        android:textSize="13sp"
-        android:textColor="@color/app_on_surface_muted"
-        android:layout_marginBottom="12dp" />
-
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        app:cardBackgroundColor="@color/app_surface"
-        app:cardCornerRadius="14dp"
-        app:strokeColor="@color/app_outline"
-        app:strokeWidth="1dp">
+        <ImageView
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:contentDescription="@string/cd_logo"
+            android:src="@drawable/ic_logo_mesh"
+            app:tint="@color/app_on_surface" />
 
         <TextView
-            android:id="@+id/empty_text"
-            android:layout_width="match_parent"
+            android:id="@+id/nodes_header"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Нет узлов. Подключитесь и дождитесь пакетов FromRadio."
-            android:textColor="@color/app_on_surface_muted"
-            android:padding="12dp"
-            android:visibility="gone" />
-    </com.google.android.material.card.MaterialCardView>
+            android:layout_marginStart="8dp"
+            android:text="@string/nodes_title"
+            android:textColor="@color/app_on_surface"
+            android:textSize="28sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/nodes_counter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="44dp"
+        android:layout_marginTop="2dp"
+        android:textColor="@color/app_on_surface_muted"
+        android:textSize="14sp"
+        tools:text="(онлайн 1 / показано 3 / всего 3)" />
+
+    <!-- Поле фильтра + кнопка сортировки -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_filter_field"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="14dp">
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:contentDescription="@string/cd_search"
+                android:src="@drawable/ic_search"
+                app:tint="@color/app_on_surface_muted" />
+
+            <EditText
+                android:id="@+id/nodes_filter"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginStart="10dp"
+                android:autofillHints="no"
+                android:background="@android:color/transparent"
+                android:hint="@string/nodes_filter_hint"
+                android:imeOptions="actionSearch"
+                android:importantForAutofill="no"
+                android:inputType="text"
+                android:maxLines="1"
+                android:textColor="@color/app_on_surface"
+                android:textColorHint="@color/app_on_surface_muted"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/nodes_sort"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:layout_marginStart="10dp"
+            android:background="@drawable/bg_sort_button"
+            android:contentDescription="@string/cd_sort"
+            android:src="@drawable/ic_sort"
+            app:tint="@color/app_on_surface" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/empty_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:gravity="center"
+        android:text="@string/nodes_empty"
+        android:textColor="@color/app_on_surface_muted"
+        android:textSize="14sp"
+        android:visibility="gone" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/nodes_recycler"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:layout_marginTop="16dp"
         android:layout_weight="1"
         android:clipToPadding="false"
-        android:paddingTop="4dp"
-        android:paddingBottom="8dp" />
+        android:paddingBottom="12dp" />
 
 </LinearLayout>
