@@ -7,7 +7,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -128,36 +127,39 @@ class NodesAdapter extends ListAdapter<NodeInfo, NodesAdapter.VH> {
         // MQTT-off иконка показывается, если узел НЕ через MQTT (как в оригинале — облако перечёркнуто)
         h.mqttOff.setVisibility(n.isViaMqtt() ? View.GONE : View.VISIBLE);
 
-        // Метрики
-        if (n.getVoltage() > 0f) {
+        // Метрики мощности: иконка батареи + текст
+        // Возможные комбинации:
+        //   voltage + battery%  → "🔋 PWR 4,35V · 85%"     (синий)
+        //   только voltage      → "🔋 PWR 4,35V"           (синий)
+        //   только battery%     → "🔋 0%"                  (приглушённый)
+        //   ничего              → "🔋 0%"                  (placeholder, приглушённый)
+        boolean hasVoltage = n.getVoltage() > 0f;
+        boolean hasBattery = n.getBatteryLevel() >= 0;
+
+        // Второй (отдельный) блок батареи в новом дизайне всегда скрыт —
+        // батарея либо включена в PWR-строку, либо PWR-строка показывает только %.
+        h.batteryIcon.setVisibility(View.GONE);
+        h.battery.setVisibility(View.GONE);
+
+        h.powerIcon.setVisibility(View.VISIBLE);
+        h.voltage.setVisibility(View.VISIBLE);
+        if (hasVoltage && hasBattery) {
+            h.voltage.setText(ctx.getString(
+                    R.string.node_pwr_with_percent_format,
+                    n.getVoltage(),
+                    n.getBatteryLevel()));
+            tintPowerRow(h, ContextCompat.getColor(ctx, R.color.node_metric_blue));
+        } else if (hasVoltage) {
             h.voltage.setText(ctx.getString(R.string.node_pwr_format, n.getVoltage()));
-            h.voltage.setVisibility(View.VISIBLE);
-            h.powerIcon.setVisibility(View.VISIBLE);
+            tintPowerRow(h, ContextCompat.getColor(ctx, R.color.node_metric_blue));
+        } else if (hasBattery) {
+            h.voltage.setText(ctx.getString(
+                    R.string.node_battery_percent_format, n.getBatteryLevel()));
+            tintPowerRow(h, ContextCompat.getColor(ctx, R.color.app_on_surface_muted));
         } else {
-            h.voltage.setVisibility(View.GONE);
-            h.powerIcon.setVisibility(View.GONE);
-        }
-
-        if (n.getBatteryLevel() >= 0) {
-            h.battery.setText(ctx.getString(R.string.node_battery_percent_format, n.getBatteryLevel()));
-            h.battery.setVisibility(View.VISIBLE);
-            h.batteryIcon.setVisibility(View.VISIBLE);
-            // Если PWR отсутствует — батарея становится первичной метрикой
-            if (n.getVoltage() <= 0f) {
-                ((LinearLayout.LayoutParams) h.batteryIcon.getLayoutParams()).leftMargin = 0;
-            } else {
-                ((LinearLayout.LayoutParams) h.batteryIcon.getLayoutParams()).leftMargin = dp(ctx, 14);
-            }
-        } else {
-            h.battery.setVisibility(View.GONE);
-            h.batteryIcon.setVisibility(View.GONE);
-        }
-
-        // Если ни PWR, ни батареи нет — покажем placeholder
-        if (n.getVoltage() <= 0f && n.getBatteryLevel() < 0) {
-            h.battery.setText(ctx.getString(R.string.node_battery_percent_format, 0));
-            h.battery.setVisibility(View.VISIBLE);
-            h.batteryIcon.setVisibility(View.VISIBLE);
+            // placeholder (как в оригинальном Meshtastic-Android, когда нода молчит)
+            h.voltage.setText(ctx.getString(R.string.node_battery_percent_format, 0));
+            tintPowerRow(h, ContextCompat.getColor(ctx, R.color.app_on_surface_muted));
         }
 
         if (n.getAltitude() != null) {
@@ -179,6 +181,12 @@ class NodesAdapter extends ListAdapter<NodeInfo, NodesAdapter.VH> {
         h.hwModel.setText(orDash(ctx, n.getHwModel()).toUpperCase(Locale.ROOT));
         h.role.setText(orDash(ctx, n.getRole()).toUpperCase(Locale.ROOT));
         h.nodeId.setText(ctx.getString(R.string.node_id_format, shortIdHex(n.getNodeNum())));
+    }
+
+    /** Перекрашивает иконку батареи + текст PWR одним цветом. */
+    private static void tintPowerRow(VH h, int color) {
+        h.powerIcon.setColorFilter(color);
+        h.voltage.setTextColor(color);
     }
 
     private static String orDash(Context ctx, String v) {
@@ -226,10 +234,6 @@ class NodesAdapter extends ListAdapter<NodeInfo, NodesAdapter.VH> {
         if (deltaHr < 24) return ctx.getString(R.string.last_seen_hr_format, (int) deltaHr);
         long deltaDay = deltaHr / 24;
         return ctx.getString(R.string.last_seen_day_format, (int) deltaDay);
-    }
-
-    private static int dp(Context ctx, int dp) {
-        return Math.round(ctx.getResources().getDisplayMetrics().density * dp);
     }
 
     static class VH extends RecyclerView.ViewHolder {

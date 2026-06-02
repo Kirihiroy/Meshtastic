@@ -59,6 +59,7 @@
     <string name="node_default_name_format">Meshtastic %1$s</string>
     <string name="node_id_format">!%1$s</string>
     <string name="node_pwr_format">PWR %1$.2fV</string>
+    <string name="node_pwr_with_percent_format">PWR %1$.2fV · %2$d%%</string>
     <string name="node_battery_percent_format">%1$d%%</string>
     <string name="node_chutil_format">ChUtil %1$.1f%%</string>
     <string name="node_airutil_format">AirUtil %1$.1f%%</string>
