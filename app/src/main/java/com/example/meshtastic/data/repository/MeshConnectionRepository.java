@@ -608,6 +608,15 @@ public class MeshConnectionRepository {
             n.setUserId(u.getId());
             n.setLongName(u.getLongName());
             n.setShortName(u.getShortName());
+            // hw_model и role в новых прошивках дублируются в NodeInfo,
+            // но User.* — основной (и старый) источник.
+            MeshProtos.HardwareModel hw = u.getHwModel();
+            if (hw != null && hw != MeshProtos.HardwareModel.UNSET) {
+                n.setHwModel(hw.name());
+            }
+            if (u.getRole() != null) {
+                n.setRole(u.getRole().name());
+            }
         }
 
         if (ni.hasPosition()) {
@@ -615,14 +624,21 @@ public class MeshConnectionRepository {
             // В protobuf latitudeI/longitudeI - int32 в 1e-7 градуса
             if (p.hasLatitudeI()) n.setLatitude(p.getLatitudeI() / 1e7);
             if (p.hasLongitudeI()) n.setLongitude(p.getLongitudeI() / 1e7);
+            if (p.hasAltitude()) n.setAltitude(p.getAltitude());
         }
 
         n.setSnr(ni.getSnr());
         n.setLastHeard(ni.getLastHeard());
         n.setViaMqtt(ni.getViaMqtt());
 
-        if (ni.hasDeviceMetrics() && ni.getDeviceMetrics().hasBatteryLevel()) {
-            n.setBatteryLevel(ni.getDeviceMetrics().getBatteryLevel());
+        if (ni.hasDeviceMetrics()) {
+            // DeviceMetrics из telemetry.proto: battery_level, voltage,
+            // channel_utilization, air_util_tx — все optional float/uint32.
+            var dm = ni.getDeviceMetrics();
+            if (dm.hasBatteryLevel()) n.setBatteryLevel(dm.getBatteryLevel());
+            if (dm.hasVoltage()) n.setVoltage(dm.getVoltage());
+            if (dm.hasChannelUtilization()) n.setChUtilization(dm.getChannelUtilization());
+            if (dm.hasAirUtilTx()) n.setAirUtilTx(dm.getAirUtilTx());
         }
 
         if (ni.hasHopsAway()) n.setHopsAway(ni.getHopsAway());
