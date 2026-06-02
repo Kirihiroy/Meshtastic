@@ -17,6 +17,8 @@ import androidx.fragment.app.Fragment;
 import com.example.meshtastic.R;
 import com.example.meshtastic.databinding.FragmentSettingsBinding;
 
+import java.util.function.Supplier;
+
 /**
  * Главный экран настроек — список разделов в стиле оригинального Meshtastic-Android.
  * Сами под-экраны (LoRa, Каналы, Безопасность, ...) пока заглушены Toast'ом
@@ -32,36 +34,63 @@ public class SettingsFragment extends Fragment {
         binding = FragmentSettingsBinding.inflate(inflater, container, false);
 
         // Группа: LoRa / Каналы / Безопасность
-        bindEntry(binding.entryLora.getRoot(), R.drawable.ic_lora, R.string.settings_entry_lora);
-        bindEntry(binding.entryChannels.getRoot(), R.drawable.ic_list, R.string.settings_entry_channels);
-        bindEntry(binding.entrySecurity.getRoot(), R.drawable.ic_shield, R.string.settings_entry_security);
+        bindEntry(binding.entryLora.getRoot(), R.drawable.ic_lora,
+                R.string.settings_entry_lora, LoRaSettingsFragment::new);
+        bindEntry(binding.entryChannels.getRoot(), R.drawable.ic_list,
+                R.string.settings_entry_channels, null);
+        bindEntry(binding.entrySecurity.getRoot(), R.drawable.ic_shield,
+                R.string.settings_entry_security, null);
 
         // Группа: Настройки устройства
-        bindEntry(binding.entryUser.getRoot(), R.drawable.ic_person, R.string.settings_entry_user);
-        bindEntry(binding.entryDevice.getRoot(), R.drawable.ic_router, R.string.settings_entry_device);
-        bindEntry(binding.entryLocation.getRoot(), R.drawable.ic_location_pin, R.string.settings_entry_location);
-        bindEntry(binding.entryPower.getRoot(), R.drawable.ic_plug, R.string.settings_entry_power);
-        bindEntry(binding.entryNetwork.getRoot(), R.drawable.ic_wifi, R.string.settings_entry_network);
-        bindEntry(binding.entryDisplay.getRoot(), R.drawable.ic_display, R.string.settings_entry_display);
-        bindEntry(binding.entryBluetooth.getRoot(), R.drawable.ic_bluetooth, R.string.settings_entry_bluetooth);
+        bindEntry(binding.entryUser.getRoot(), R.drawable.ic_person,
+                R.string.settings_entry_user, null);
+        bindEntry(binding.entryDevice.getRoot(), R.drawable.ic_router,
+                R.string.settings_entry_device, null);
+        bindEntry(binding.entryLocation.getRoot(), R.drawable.ic_location_pin,
+                R.string.settings_entry_location, null);
+        bindEntry(binding.entryPower.getRoot(), R.drawable.ic_plug,
+                R.string.settings_entry_power, null);
+        bindEntry(binding.entryNetwork.getRoot(), R.drawable.ic_wifi,
+                R.string.settings_entry_network, null);
+        bindEntry(binding.entryDisplay.getRoot(), R.drawable.ic_display,
+                R.string.settings_entry_display, null);
+        bindEntry(binding.entryBluetooth.getRoot(), R.drawable.ic_bluetooth,
+                R.string.settings_entry_bluetooth, null);
 
         return binding.getRoot();
     }
 
     /**
-     * Настраивает одну строку: иконка, подпись, обработчик клика-заглушка.
-     * Заглушка показывает Toast «раздел не реализован» — при добавлении настоящего
-     * sub-экрана заменяется на навигацию (NavController.navigate / FragmentManager.replace).
+     * Настраивает одну строку меню. Если {@code fragmentFactory} задан — клик
+     * открывает соответствующий под-экран через FragmentTransaction с back stack.
+     * Если {@code null} — показывает Toast «раздел не реализован» (старое поведение).
      */
-    private void bindEntry(@NonNull View root, @DrawableRes int iconRes, @StringRes int labelRes) {
+    private void bindEntry(@NonNull View root,
+                           @DrawableRes int iconRes,
+                           @StringRes int labelRes,
+                           @Nullable Supplier<Fragment> fragmentFactory) {
         ImageView icon = root.findViewById(R.id.entry_icon);
         TextView label = root.findViewById(R.id.entry_label);
         icon.setImageResource(iconRes);
         label.setText(labelRes);
         String labelText = getString(labelRes);
-        root.setOnClickListener(v -> Toast.makeText(requireContext(),
-                getString(R.string.settings_entry_not_implemented, labelText),
-                Toast.LENGTH_SHORT).show());
+        root.setOnClickListener(v -> {
+            if (fragmentFactory != null) {
+                openSubScreen(fragmentFactory.get());
+            } else {
+                Toast.makeText(requireContext(),
+                        getString(R.string.settings_entry_not_implemented, labelText),
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void openSubScreen(@NonNull Fragment fragment) {
+        getParentFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .addToBackStack(null)
+                .commit();
     }
 
     @Override

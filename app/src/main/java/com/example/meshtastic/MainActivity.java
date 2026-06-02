@@ -65,6 +65,11 @@ public class MainActivity extends AppCompatActivity {
 
     private void showFragment(androidx.fragment.app.Fragment fragment) {
         FragmentManager fragmentManager = getSupportFragmentManager();
+        // Очищаем под-экраны (LoRaSettingsFragment и т.п.), иначе при возврате
+        // на вкладку через bottom_nav остаются висеть устаревшие записи в back stack.
+        if (fragmentManager.getBackStackEntryCount() > 0) {
+            fragmentManager.popBackStackImmediate(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+        }
         FragmentTransaction transaction = fragmentManager.beginTransaction();
         transaction.replace(R.id.fragment_container, fragment);
         transaction.commit();
