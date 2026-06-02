@@ -95,6 +95,22 @@
     <string name="settings_entry_bluetooth">Bluetooth</string>
     <string name="settings_entry_not_implemented">Раздел «%1$s» — ещё не реализован</string>
 
+    <!-- LoRa sub-screen -->
+    <string name="lora_title">LoRa</string>
+    <string name="lora_label_region">Регион</string>
+    <string name="lora_label_modem_preset">Пресет модема</string>
+    <string name="lora_label_hop_limit">Hop limit</string>
+    <string name="lora_label_tx_power">TX мощность (dBm)</string>
+    <string name="lora_label_tx_enabled">TX включён</string>
+    <string name="lora_label_ignore_mqtt">Игнорировать MQTT</string>
+    <string name="lora_hint_hop">1–7</string>
+    <string name="lora_hint_tx_power">0–30</string>
+    <string name="lora_btn_save">Сохранить как черновик</string>
+    <string name="lora_toast_saved">Черновик LoRa сохранён</string>
+    <string name="lora_toast_bad_hop">Hop limit: укажите значение 1–7</string>
+    <string name="lora_toast_bad_tx_power">TX мощность: укажите значение 0–30</string>
+    <string name="cd_back">Назад</string>
+
     <!-- SettingsFragment (старая форма — оставлено для будущих под-экранов) -->
     <string name="settings_title">Панель конфигурации</string>
     <string name="settings_subtitle">Сеть, безопасность и идентификация узла</string>
