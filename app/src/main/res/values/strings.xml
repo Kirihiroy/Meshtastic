@@ -80,7 +80,22 @@
     <string name="cd_sort">Сортировка</string>
     <string name="cd_logo">Meshtastic</string>
 
-    <!-- SettingsFragment -->
+    <!-- SettingsFragment (новый дизайн — список разделов) -->
+    <string name="settings_header">Настройки</string>
+    <string name="settings_section_device">Настройки устройства</string>
+    <string name="settings_entry_lora">LoRa</string>
+    <string name="settings_entry_channels">Каналы</string>
+    <string name="settings_entry_security">Безопасность</string>
+    <string name="settings_entry_user">Пользователь</string>
+    <string name="settings_entry_device">Устройство</string>
+    <string name="settings_entry_location">Местоположение</string>
+    <string name="settings_entry_power">Питание</string>
+    <string name="settings_entry_network">Сеть</string>
+    <string name="settings_entry_display">Дисплей</string>
+    <string name="settings_entry_bluetooth">Bluetooth</string>
+    <string name="settings_entry_not_implemented">Раздел «%1$s» — ещё не реализован</string>
+
+    <!-- SettingsFragment (старая форма — оставлено для будущих под-экранов) -->
     <string name="settings_title">Панель конфигурации</string>
     <string name="settings_subtitle">Сеть, безопасность и идентификация узла</string>
     <string name="settings_label_node_name">Имя узла</string>

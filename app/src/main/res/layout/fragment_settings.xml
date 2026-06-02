@@ -1,187 +1,163 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/app_background"
-    android:padding="16dp">
+    android:fillViewport="true"
+    android:paddingHorizontal="16dp"
+    android:paddingTop="16dp"
+    android:paddingBottom="16dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <TextView
+        <!-- Заголовок: лого + "Настройки" -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Панель конфигурации"
-            android:textSize="26sp"
-            android:textStyle="bold"
-            android:textColor="@color/app_on_surface"
-            android:layout_marginBottom="6dp" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Сеть, безопасность и идентификация узла"
-            android:textSize="14sp"
-            android:textColor="@color/app_on_surface_muted"
-            android:layout_marginBottom="16dp" />
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:contentDescription="@string/cd_logo"
+                android:src="@drawable/ic_logo_mesh"
+                app:tint="@color/app_on_surface" />
 
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardBackgroundColor="@color/app_surface"
-            app:cardCornerRadius="16dp"
-            app:strokeColor="@color/app_outline"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:layout_marginStart="8dp"
+                android:text="@string/settings_header"
+                android:textColor="@color/app_on_surface"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+        </LinearLayout>
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Имя узла"
-                    android:textColor="@color/app_on_surface"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="6dp" />
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    app:boxBackgroundMode="outline"
-                    app:boxStrokeColor="@color/app_outline"
-                    app:hintEnabled="false">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/node_name_edit"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="textPersonName"
-                        android:textColor="@color/app_on_surface"
-                        android:textColorHint="@color/app_on_surface_muted"
-                        android:hint="например: TEAM-1" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Регион"
-                    android:textColor="@color/app_on_surface"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="6dp" />
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    app:boxBackgroundMode="outline"
-                    app:boxStrokeColor="@color/app_outline"
-                    app:hintEnabled="false">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/region_edit"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="text"
-                        android:textColor="@color/app_on_surface"
-                        android:textColorHint="@color/app_on_surface_muted"
-                        android:hint="например: EU_868" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Имя канала"
-                    android:textColor="@color/app_on_surface"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="6dp" />
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    app:boxBackgroundMode="outline"
-                    app:boxStrokeColor="@color/app_outline"
-                    app:hintEnabled="false">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/channel_name_edit"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="text"
-                        android:textColor="@color/app_on_surface"
-                        android:textColorHint="@color/app_on_surface_muted"
-                        android:hint="например: GROUP" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Ключ канала / PSK"
-                    android:textColor="@color/app_on_surface"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="6dp" />
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="4dp"
-                    app:boxBackgroundMode="outline"
-                    app:boxStrokeColor="@color/app_outline"
-                    app:hintEnabled="false">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/psk_edit"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="textPassword"
-                        android:textColor="@color/app_on_surface"
-                        android:textColorHint="@color/app_on_surface_muted"
-                        android:hint="секретный ключ" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/save_button"
+        <!-- Карточка 1: LoRa / Каналы / Безопасность -->
+        <LinearLayout
+            android:id="@+id/settings_group_network"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Сохранить"
-            android:textSize="16sp"
-            android:textColor="@color/app_on_primary"
-            app:backgroundTint="@color/app_primary"
-            app:cornerRadius="16dp"
-            android:padding="14dp" />
+            android:layout_marginTop="20dp"
+            android:background="@drawable/bg_settings_card"
+            android:orientation="vertical"
+            android:paddingVertical="4dp">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/apply_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Применить на устройство"
-            android:textSize="16sp"
-            android:textColor="@color/app_on_surface"
-            app:backgroundTint="@color/app_surface"
-            app:strokeColor="@color/app_outline"
-            app:strokeWidth="1dp"
-            app:cornerRadius="16dp"
-            android:padding="14dp"
-            android:layout_marginTop="10dp" />
+            <include
+                android:id="@+id/entry_lora"
+                layout="@layout/item_settings_entry" />
 
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="56dp"
+                android:background="@color/app_outline" />
+
+            <include
+                android:id="@+id/entry_channels"
+                layout="@layout/item_settings_entry" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="56dp"
+                android:background="@color/app_outline" />
+
+            <include
+                android:id="@+id/entry_security"
+                layout="@layout/item_settings_entry" />
+        </LinearLayout>
+
+        <!-- Заголовок раздела -->
         <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="12dp"
+            android:text="@string/settings_section_device"
+            android:textColor="@color/app_on_surface"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <!-- Карточка 2: настройки устройства -->
+        <LinearLayout
+            android:id="@+id/settings_group_device"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Важно: настройки сохраняются локально как черновик и могут быть отправлены на устройство по BLE. Сейчас применяется имя канала и PSK."
-            android:textSize="12sp"
-            android:textColor="@color/app_on_surface_muted"
-            android:paddingTop="16dp" />
+            android:background="@drawable/bg_settings_card"
+            android:orientation="vertical"
+            android:paddingVertical="4dp">
+
+            <include
+                android:id="@+id/entry_user"
+                layout="@layout/item_settings_entry" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="56dp"
+                android:background="@color/app_outline" />
+
+            <include
+                android:id="@+id/entry_device"
+                layout="@layout/item_settings_entry" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="56dp"
+                android:background="@color/app_outline" />
+
+            <include
+                android:id="@+id/entry_location"
+                layout="@layout/item_settings_entry" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="56dp"
+                android:background="@color/app_outline" />
+
+            <include
+                android:id="@+id/entry_power"
+                layout="@layout/item_settings_entry" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="56dp"
+                android:background="@color/app_outline" />
+
+            <include
+                android:id="@+id/entry_network"
+                layout="@layout/item_settings_entry" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="56dp"
+                android:background="@color/app_outline" />
+
+            <include
+                android:id="@+id/entry_display"
+                layout="@layout/item_settings_entry" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="56dp"
+                android:background="@color/app_outline" />
+
+            <include
+                android:id="@+id/entry_bluetooth"
+                layout="@layout/item_settings_entry" />
+        </LinearLayout>
 
     </LinearLayout>
 </ScrollView>
