@@ -21,4 +21,13 @@
     <color name="bubble_received_text">#212121</color>
     <color name="bubble_received_time">#757575</color>
     <color name="bubble_sender">#1976D2</color>
+
+    <!-- Nodes screen -->
+    <color name="node_card_bg">#1A2330</color>
+    <color name="node_lock_green">#4CAF50</color>
+    <color name="node_mqtt_off">#E53935</color>
+    <color name="node_metric_blue">#7AB0FF</color>
+    <color name="node_metric_green">#7DD3A0</color>
+    <color name="node_badge_text">#0B0E14</color>
+    <color name="node_filter_bg">#10151D</color>
 </resources>

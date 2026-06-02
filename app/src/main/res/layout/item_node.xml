@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="10dp"
-    app:cardBackgroundColor="@color/app_surface"
+    android:layout_marginBottom="12dp"
+    app:cardBackgroundColor="@color/node_card_bg"
     app:cardCornerRadius="16dp"
-    app:strokeColor="@color/app_outline"
-    app:strokeWidth="1dp">
+    app:cardElevation="0dp"
+    app:strokeWidth="0dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -15,48 +16,311 @@
         android:orientation="vertical"
         android:padding="14dp">
 
-        <TextView
-            android:id="@+id/node_title"
+        <!-- Верхний ряд: бейдж • замок • имя+тип • mqtt-off -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Node"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="@color/app_on_surface" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/node_subtitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="ID"
-            android:textSize="12sp"
-            android:textColor="@color/app_on_surface_muted" />
+            <TextView
+                android:id="@+id/node_badge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_node_badge"
+                android:fontFamily="monospace"
+                android:minWidth="56dp"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:textAlignment="center"
+                android:textColor="@color/node_badge_text"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                tools:text="abe0" />
 
-        <TextView
-            android:id="@+id/node_meta"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="meta"
-            android:textSize="13sp"
-            android:textColor="@color/app_on_surface"
-            android:layout_marginTop="6dp" />
+            <ImageView
+                android:id="@+id/node_lock"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_marginStart="12dp"
+                android:contentDescription="@string/cd_lock"
+                android:src="@drawable/ic_lock_closed"
+                app:tint="@color/node_lock_green" />
 
-        <TextView
-            android:id="@+id/node_coords"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="coords"
-            android:textSize="13sp"
-            android:textColor="@color/app_on_surface"
-            android:layout_marginTop="2dp" />
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/node_time"
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/node_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:textColor="@color/app_on_surface"
+                        android:textSize="17sp"
+                        android:textStyle="bold"
+                        tools:text="Meshtastic abe0" />
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_marginStart="6dp"
+                        android:contentDescription="@string/cd_router"
+                        android:src="@drawable/ic_router"
+                        app:tint="@color/app_on_surface" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:contentDescription="@string/cd_antenna"
+                        android:src="@drawable/ic_antenna"
+                        app:tint="@color/app_on_surface_muted" />
+
+                    <TextView
+                        android:id="@+id/node_last_seen"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:textColor="@color/app_on_surface_muted"
+                        android:textSize="13sp"
+                        tools:text="1 ч назад" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/node_mqtt_off"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginStart="8dp"
+                android:contentDescription="@string/cd_mqtt_off"
+                android:src="@drawable/ic_cloud_off"
+                app:tint="@color/node_mqtt_off" />
+        </LinearLayout>
+
+        <!-- Ряд метрик: PWR / ChUtil / AirUtil  + (опц. высота / батарея) -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="last heard"
-            android:textSize="12sp"
-            android:textColor="@color/app_on_surface_muted"
-            android:layout_marginTop="4dp" />
+            android:layout_marginTop="14dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/node_power_icon"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_power"
+                app:tint="@color/node_metric_blue" />
+
+            <TextView
+                android:id="@+id/node_voltage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:textColor="@color/node_metric_blue"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                tools:text="PWR 4,35V" />
+
+            <ImageView
+                android:id="@+id/node_battery_icon"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_battery"
+                android:visibility="gone"
+                app:tint="@color/app_on_surface_muted"
+                tools:visibility="visible" />
+
+            <TextView
+                android:id="@+id/node_battery"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:textColor="@color/app_on_surface_muted"
+                android:textSize="13sp"
+                android:visibility="gone"
+                tools:text="0%"
+                tools:visibility="visible" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <ImageView
+                android:id="@+id/node_altitude_icon"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_altitude"
+                android:visibility="gone"
+                app:tint="@color/node_metric_green"
+                tools:visibility="visible" />
+
+            <TextView
+                android:id="@+id/node_altitude"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:textColor="@color/node_metric_green"
+                android:textSize="13sp"
+                android:visibility="gone"
+                tools:text="Высота 0 m MSL"
+                tools:visibility="visible" />
+        </LinearLayout>
+
+        <!-- Доп. ряд: ChUtil и AirUtil -->
+        <LinearLayout
+            android:id="@+id/node_util_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_chart"
+                app:tint="@color/app_on_surface_muted" />
+
+            <TextView
+                android:id="@+id/node_chutil"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:textColor="@color/app_on_surface_muted"
+                android:textSize="13sp"
+                tools:text="ChUtil 0,0%" />
+
+            <ImageView
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:layout_marginStart="14dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_air"
+                app:tint="@color/app_on_surface_muted" />
+
+            <TextView
+                android:id="@+id/node_airutil"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:textColor="@color/app_on_surface_muted"
+                android:textSize="13sp"
+                tools:text="AirUtil 0,0%" />
+        </LinearLayout>
+
+        <!-- Нижний ряд: HW model • Role • !node_id -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:baselineAligned="false"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="start|center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:contentDescription="@string/cd_router"
+                    android:src="@drawable/ic_router"
+                    app:tint="@color/app_on_surface_muted" />
+
+                <TextView
+                    android:id="@+id/node_hw_model"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/app_on_surface"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    tools:text="HELTEC_V3" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:contentDescription="@string/cd_role"
+                    android:src="@drawable/ic_person"
+                    app:tint="@color/app_on_surface_muted" />
+
+                <TextView
+                    android:id="@+id/node_role"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/app_on_surface"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    tools:text="CLIENT" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="end|center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:contentDescription="@string/cd_node_id"
+                    android:src="@drawable/ic_fingerprint"
+                    app:tint="@color/app_on_surface_muted" />
+
+                <TextView
+                    android:id="@+id/node_id"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:ellipsize="end"
+                    android:fontFamily="monospace"
+                    android:maxLines="1"
+                    android:textColor="@color/app_on_surface"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    tools:text="!acaaabe0" />
+            </LinearLayout>
+        </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
