@@ -111,6 +111,24 @@
     <string name="lora_toast_bad_tx_power">TX мощность: укажите значение 0–30</string>
     <string name="cd_back">Назад</string>
 
+    <!-- Channels sub-screen -->
+    <string name="channels_title">Каналы</string>
+    <string name="channels_subtitle">Слот 0 — главный канал. Слоты 1–7 — дополнительные.</string>
+    <string name="channel_role_primary">PRIMARY</string>
+    <string name="channel_role_secondary">SECONDARY</string>
+    <string name="channel_role_disabled">DISABLED</string>
+    <string name="channel_name_placeholder">(без имени)</string>
+    <string name="channel_edit_title_format">Канал #%1$d</string>
+    <string name="channel_label_name">Имя канала</string>
+    <string name="channel_label_psk">Ключ PSK (hex 32 или 64 символа)</string>
+    <string name="channel_label_role">Роль</string>
+    <string name="channel_hint_name">например: GROUP</string>
+    <string name="channel_hint_psk">пусто = без шифрования</string>
+    <string name="channel_btn_save">Сохранить как черновик</string>
+    <string name="channel_toast_saved">Канал #%1$d сохранён</string>
+    <string name="channel_toast_bad_psk">PSK должен быть hex длиной 32 или 64 (или пустым)</string>
+    <string name="channel_toast_primary_role_locked">Канал #0 всегда PRIMARY</string>
+
     <!-- SettingsFragment (старая форма — оставлено для будущих под-экранов) -->
     <string name="settings_title">Панель конфигурации</string>
     <string name="settings_subtitle">Сеть, безопасность и идентификация узла</string>

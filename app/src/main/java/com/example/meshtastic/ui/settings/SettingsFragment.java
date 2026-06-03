@@ -37,7 +37,7 @@ public class SettingsFragment extends Fragment {
         bindEntry(binding.entryLora.getRoot(), R.drawable.ic_lora,
                 R.string.settings_entry_lora, LoRaSettingsFragment::new);
         bindEntry(binding.entryChannels.getRoot(), R.drawable.ic_list,
-                R.string.settings_entry_channels, null);
+                R.string.settings_entry_channels, ChannelsSettingsFragment::new);
         bindEntry(binding.entrySecurity.getRoot(), R.drawable.ic_shield,
                 R.string.settings_entry_security, null);
 
