@@ -156,6 +156,63 @@
     <string name="user_toast_saved">Пользователь: черновик сохранён</string>
     <string name="user_toast_bad_short_name">Короткое имя: до 4 символов</string>
 
+    <!-- Device sub-screen -->
+    <string name="device_title">Устройство</string>
+    <string name="device_label_rebroadcast">Режим ретрансляции</string>
+    <string name="device_label_nodeinfo_secs">Период NodeInfo (сек)</string>
+    <string name="device_label_serial">Serial-консоль включена</string>
+    <string name="device_label_debug_log">Подробные debug-логи</string>
+    <string name="device_label_led_off">Отключить LED-heartbeat</string>
+    <string name="device_btn_save">Сохранить как черновик</string>
+    <string name="device_toast_saved">Устройство: черновик сохранён</string>
+
+    <!-- Location sub-screen -->
+    <string name="location_title">Местоположение</string>
+    <string name="location_label_gps_mode">Режим GPS</string>
+    <string name="location_label_broadcast_secs">Период отправки позиции (сек)</string>
+    <string name="location_label_fixed">Фиксированная позиция</string>
+    <string name="location_label_smart">Smart Position (умная отправка)</string>
+    <string name="location_btn_save">Сохранить как черновик</string>
+    <string name="location_toast_saved">Местоположение: черновик сохранён</string>
+
+    <!-- Power sub-screen -->
+    <string name="power_title">Питание</string>
+    <string name="power_label_saving">Режим энергосбережения</string>
+    <string name="power_label_shutdown">Выкл. при батарее, через (сек, 0 = выкл)</string>
+    <string name="power_label_wait_bt">Ожидание BT при загрузке (сек)</string>
+    <string name="power_label_min_wake">Минимальный wake-период (сек)</string>
+    <string name="power_btn_save">Сохранить как черновик</string>
+    <string name="power_toast_saved">Питание: черновик сохранён</string>
+
+    <!-- Network sub-screen -->
+    <string name="network_title">Сеть</string>
+    <string name="network_label_wifi_enabled">Wi-Fi включен</string>
+    <string name="network_label_wifi_ssid">Wi-Fi SSID</string>
+    <string name="network_label_wifi_psk">Wi-Fi пароль</string>
+    <string name="network_label_ntp">NTP сервер</string>
+    <string name="network_label_eth_enabled">Ethernet включен</string>
+    <string name="network_btn_save">Сохранить как черновик</string>
+    <string name="network_toast_saved">Сеть: черновик сохранён</string>
+
+    <!-- Display sub-screen -->
+    <string name="display_title">Дисплей</string>
+    <string name="display_label_screen_on">Экран включён (сек, 0 = всегда)</string>
+    <string name="display_label_units">Единицы измерения</string>
+    <string name="display_label_flip">Перевернуть экран</string>
+    <string name="display_label_12h">12-часовое время</string>
+    <string name="display_label_heading_bold">Жирные заголовки</string>
+    <string name="display_btn_save">Сохранить как черновик</string>
+    <string name="display_toast_saved">Дисплей: черновик сохранён</string>
+
+    <!-- Bluetooth sub-screen -->
+    <string name="bluetooth_title">Bluetooth</string>
+    <string name="bluetooth_label_enabled">Bluetooth включен</string>
+    <string name="bluetooth_label_mode">Режим pairing</string>
+    <string name="bluetooth_label_fixed_pin">Фиксированный PIN (6 цифр)</string>
+    <string name="bluetooth_btn_save">Сохранить как черновик</string>
+    <string name="bluetooth_toast_saved">Bluetooth: черновик сохранён</string>
+    <string name="bluetooth_toast_bad_pin">PIN: ровно 6 цифр</string>
+
     <!-- SettingsFragment (старая форма — оставлено для будущих под-экранов) -->
     <string name="settings_title">Панель конфигурации</string>
     <string name="settings_subtitle">Сеть, безопасность и идентификация узла</string>

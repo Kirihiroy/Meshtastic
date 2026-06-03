@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/app_background"
+    android:fillViewport="true"
+    android:paddingBottom="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:gravity="center_vertical" android:orientation="horizontal"
+            android:paddingHorizontal="8dp" android:paddingVertical="12dp">
+
+            <ImageButton
+                android:id="@+id/power_back"
+                android:layout_width="44dp" android:layout_height="44dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/cd_back"
+                android:src="@drawable/ic_arrow_back" app:tint="@color/app_on_surface" />
+
+            <TextView
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginStart="8dp" android:text="@string/power_title"
+                android:textColor="@color/app_on_surface"
+                android:textSize="24sp" android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:background="@drawable/bg_settings_card"
+            android:orientation="vertical" android:paddingVertical="4dp">
+
+            <include android:id="@+id/power_switch_saving" layout="@layout/item_settings_switch" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="14dp" android:layout_marginHorizontal="16dp"
+            android:background="@drawable/bg_settings_card"
+            android:orientation="vertical" android:padding="16dp">
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp" android:text="@string/power_label_shutdown"
+                android:textColor="@color/app_on_surface" android:textStyle="bold" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp"
+                app:boxBackgroundMode="outline" app:boxStrokeColor="@color/app_outline"
+                app:hintEnabled="false">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/power_shutdown_secs"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:inputType="number" android:maxLength="7"
+                    android:textColor="@color/app_on_surface" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp" android:text="@string/power_label_wait_bt"
+                android:textColor="@color/app_on_surface" android:textStyle="bold" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp"
+                app:boxBackgroundMode="outline" app:boxStrokeColor="@color/app_outline"
+                app:hintEnabled="false">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/power_wait_bt_secs"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:inputType="number" android:maxLength="5"
+                    android:textColor="@color/app_on_surface" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp" android:text="@string/power_label_min_wake"
+                android:textColor="@color/app_on_surface" android:textStyle="bold" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                app:boxBackgroundMode="outline" app:boxStrokeColor="@color/app_outline"
+                app:hintEnabled="false">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/power_min_wake_secs"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:inputType="number" android:maxLength="5"
+                    android:textColor="@color/app_on_surface" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/power_save"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="20dp" android:layout_marginHorizontal="16dp"
+            android:padding="14dp" android:text="@string/power_btn_save"
+            android:textColor="@color/app_on_primary" android:textSize="16sp"
+            app:backgroundTint="@color/app_primary" app:cornerRadius="16dp" />
+    </LinearLayout>
+</ScrollView>
