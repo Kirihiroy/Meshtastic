@@ -89,6 +89,31 @@ public class SettingsStore {
         return "channel_" + index + "_" + suffix;
     }
 
+    // Безопасность
+    private static final String KEY_ADMIN_PREFIX = "admin_key_";
+    private static final String KEY_IS_MANAGED = "is_managed";
+
+    /** Загрузить только секцию «Безопасность» из уже-загруженного черновика. */
+    public SettingsDraft loadWithSecurity() {
+        SettingsDraft draft = load();
+        for (int i = 0; i < SettingsDraft.MAX_ADMIN_KEYS; i++) {
+            draft.setAdminKey(i, prefs.getString(KEY_ADMIN_PREFIX + i, ""));
+        }
+        draft.setManaged(prefs.getBoolean(KEY_IS_MANAGED, false));
+        return draft;
+    }
+
+    /** Сохранить только секцию «Безопасность» поверх существующих преф. */
+    public void saveSecurity(SettingsDraft draft) {
+        if (draft == null) return;
+        SharedPreferences.Editor edit = prefs.edit();
+        for (int i = 0; i < SettingsDraft.MAX_ADMIN_KEYS; i++) {
+            edit.putString(KEY_ADMIN_PREFIX + i, safe(draft.getAdminKey(i)));
+        }
+        edit.putBoolean(KEY_IS_MANAGED, draft.isManaged());
+        edit.apply();
+    }
+
     private static String safe(String value) {
         return value == null ? "" : value.trim();
     }

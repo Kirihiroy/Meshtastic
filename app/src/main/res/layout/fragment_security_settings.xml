@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/app_background"
+    android:fillViewport="true"
+    android:paddingBottom="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="12dp">
+
+            <ImageButton
+                android:id="@+id/security_back"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/cd_back"
+                android:src="@drawable/ic_arrow_back"
+                app:tint="@color/app_on_surface" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="@string/security_title"
+                android:textColor="@color/app_on_surface"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Карточка: публичный ключ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:background="@drawable/bg_settings_card"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="@string/security_label_my_pubkey"
+                android:textColor="@color/app_on_surface"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/security_my_pubkey"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_filter_field"
+                android:fontFamily="monospace"
+                android:padding="12dp"
+                android:textColor="@color/app_on_surface_muted"
+                android:textIsSelectable="true"
+                android:textSize="12sp"
+                tools:text="3059301306072a8648ce3d020106082a8648ce3d030107..." />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/security_copy_pubkey"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="10dp"
+                android:text="@string/security_btn_copy"
+                app:icon="@drawable/ic_copy"
+                app:iconGravity="textStart" />
+        </LinearLayout>
+
+        <!-- Карточка: admin-ключи -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:layout_marginHorizontal="16dp"
+            android:background="@drawable/bg_settings_card"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:text="@string/security_label_admin_keys"
+                android:textColor="@color/app_on_surface"
+                android:textStyle="bold" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/security_admin_layout_0"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:hint="@string/security_label_admin_key_format"
+                app:boxBackgroundMode="outline"
+                app:boxStrokeColor="@color/app_outline">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/security_admin_0"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:inputType="textVisiblePassword"
+                    android:textColor="@color/app_on_surface" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/security_admin_layout_1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:hint="@string/security_label_admin_key_format"
+                app:boxBackgroundMode="outline"
+                app:boxStrokeColor="@color/app_outline">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/security_admin_1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:inputType="textVisiblePassword"
+                    android:textColor="@color/app_on_surface" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/security_admin_layout_2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/security_label_admin_key_format"
+                app:boxBackgroundMode="outline"
+                app:boxStrokeColor="@color/app_outline">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/security_admin_2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:inputType="textVisiblePassword"
+                    android:textColor="@color/app_on_surface" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <!-- Карточка: is_managed switch -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:layout_marginHorizontal="16dp"
+            android:background="@drawable/bg_settings_card"
+            android:orientation="vertical"
+            android:paddingVertical="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:minHeight="56dp"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="10dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/security_label_is_managed"
+                    android:textColor="@color/app_on_surface"
+                    android:textSize="16sp" />
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/security_is_managed"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/security_save"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:layout_marginHorizontal="16dp"
+            android:padding="14dp"
+            android:text="@string/security_btn_save"
+            android:textColor="@color/app_on_primary"
+            android:textSize="16sp"
+            app:backgroundTint="@color/app_primary"
+            app:cornerRadius="16dp" />
+
+    </LinearLayout>
+</ScrollView>
