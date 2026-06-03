@@ -144,6 +144,18 @@
     <string name="security_toast_bad_admin_key">Admin-ключ #%1$d: ожидается hex или пусто</string>
     <string name="cd_copy">Копировать</string>
 
+    <!-- User sub-screen -->
+    <string name="user_title">Пользователь</string>
+    <string name="user_label_long_name">Имя (long name)</string>
+    <string name="user_label_short_name">Короткое имя (до 4 символов)</string>
+    <string name="user_label_role">Роль</string>
+    <string name="user_label_is_licensed">HAM-оператор (is_licensed)</string>
+    <string name="user_hint_long_name">например: Алексей</string>
+    <string name="user_hint_short_name">ALX1</string>
+    <string name="user_btn_save">Сохранить как черновик</string>
+    <string name="user_toast_saved">Пользователь: черновик сохранён</string>
+    <string name="user_toast_bad_short_name">Короткое имя: до 4 символов</string>
+
     <!-- SettingsFragment (старая форма — оставлено для будущих под-экранов) -->
     <string name="settings_title">Панель конфигурации</string>
     <string name="settings_subtitle">Сеть, безопасность и идентификация узла</string>

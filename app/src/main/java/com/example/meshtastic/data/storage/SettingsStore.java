@@ -93,6 +93,31 @@ public class SettingsStore {
     private static final String KEY_ADMIN_PREFIX = "admin_key_";
     private static final String KEY_IS_MANAGED = "is_managed";
 
+    // Пользователь
+    private static final String KEY_USER_SHORT_NAME = "user_short_name";
+    private static final String KEY_USER_ROLE = "user_role";
+    private static final String KEY_USER_LICENSED = "user_is_licensed";
+
+    /** Загрузить только секцию «Пользователь» поверх базового черновика. */
+    public SettingsDraft loadWithUser() {
+        SettingsDraft draft = load();
+        draft.setUserShortName(prefs.getString(KEY_USER_SHORT_NAME, ""));
+        draft.setUserRole(prefs.getString(KEY_USER_ROLE, "CLIENT"));
+        draft.setUserLicensed(prefs.getBoolean(KEY_USER_LICENSED, false));
+        return draft;
+    }
+
+    /** Сохранить только секцию «Пользователь». */
+    public void saveUser(SettingsDraft draft) {
+        if (draft == null) return;
+        prefs.edit()
+                .putString(KEY_NODE_NAME, safe(draft.getNodeName())) // longName
+                .putString(KEY_USER_SHORT_NAME, safe(draft.getUserShortName()))
+                .putString(KEY_USER_ROLE, safe(draft.getUserRole()))
+                .putBoolean(KEY_USER_LICENSED, draft.isUserLicensed())
+                .apply();
+    }
+
     /** Загрузить только секцию «Безопасность» из уже-загруженного черновика. */
     public SettingsDraft loadWithSecurity() {
         SettingsDraft draft = load();

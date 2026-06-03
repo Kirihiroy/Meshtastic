@@ -43,7 +43,7 @@ public class SettingsFragment extends Fragment {
 
         // Группа: Настройки устройства
         bindEntry(binding.entryUser.getRoot(), R.drawable.ic_person,
-                R.string.settings_entry_user, null);
+                R.string.settings_entry_user, UserSettingsFragment::new);
         bindEntry(binding.entryDevice.getRoot(), R.drawable.ic_router,
                 R.string.settings_entry_device, null);
         bindEntry(binding.entryLocation.getRoot(), R.drawable.ic_location_pin,
