@@ -35,6 +35,12 @@ public class SettingsDraft {
 
     private boolean isManaged = false;
 
+    // Пользователь (раздел «Пользователь»)
+    // longName = nodeName (используем существующее поле, в Meshtastic это user.long_name)
+    private String userShortName = "";   // до 4 символов, user.short_name
+    private String userRole = "CLIENT";  // user.role (CLIENT, ROUTER, REPEATER, ...)
+    private boolean userIsLicensed = false; // user.is_licensed (HAM)
+
     public String getNodeName() {
         return nodeName;
     }
@@ -108,5 +114,14 @@ public class SettingsDraft {
 
     public boolean isManaged() { return isManaged; }
     public void setManaged(boolean v) { this.isManaged = v; }
+
+    public String getUserShortName() { return userShortName == null ? "" : userShortName; }
+    public void setUserShortName(String v) { this.userShortName = v == null ? "" : v; }
+
+    public String getUserRole() { return userRole == null ? "CLIENT" : userRole; }
+    public void setUserRole(String v) { this.userRole = v == null ? "CLIENT" : v; }
+
+    public boolean isUserLicensed() { return userIsLicensed; }
+    public void setUserLicensed(boolean v) { this.userIsLicensed = v; }
 }
 
