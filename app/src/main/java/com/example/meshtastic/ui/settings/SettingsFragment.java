@@ -39,7 +39,7 @@ public class SettingsFragment extends Fragment {
         bindEntry(binding.entryChannels.getRoot(), R.drawable.ic_list,
                 R.string.settings_entry_channels, ChannelsSettingsFragment::new);
         bindEntry(binding.entrySecurity.getRoot(), R.drawable.ic_shield,
-                R.string.settings_entry_security, null);
+                R.string.settings_entry_security, SecuritySettingsFragment::new);
 
         // Группа: Настройки устройства
         bindEntry(binding.entryUser.getRoot(), R.drawable.ic_person,

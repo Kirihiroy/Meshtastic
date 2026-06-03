@@ -129,6 +129,21 @@
     <string name="channel_toast_bad_psk">PSK должен быть hex длиной 32 или 64 (или пустым)</string>
     <string name="channel_toast_primary_role_locked">Канал #0 всегда PRIMARY</string>
 
+    <!-- Security sub-screen -->
+    <string name="security_title">Безопасность</string>
+    <string name="security_label_my_pubkey">Мой публичный ключ (E2E)</string>
+    <string name="security_label_admin_keys">Доверенные admin-ключи (hex)</string>
+    <string name="security_label_admin_key_format">Admin-ключ #%1$d</string>
+    <string name="security_label_is_managed">Управляется удалённо</string>
+    <string name="security_hint_admin_key">hex (X.509 EC publickey)</string>
+    <string name="security_btn_save">Сохранить как черновик</string>
+    <string name="security_btn_copy">Копировать</string>
+    <string name="security_toast_pubkey_copied">Публичный ключ скопирован</string>
+    <string name="security_toast_pubkey_unavailable">Ключ недоступен</string>
+    <string name="security_toast_saved">Безопасность: черновик сохранён</string>
+    <string name="security_toast_bad_admin_key">Admin-ключ #%1$d: ожидается hex или пусто</string>
+    <string name="cd_copy">Копировать</string>
+
     <!-- SettingsFragment (старая форма — оставлено для будущих под-экранов) -->
     <string name="settings_title">Панель конфигурации</string>
     <string name="settings_subtitle">Сеть, безопасность и идентификация узла</string>

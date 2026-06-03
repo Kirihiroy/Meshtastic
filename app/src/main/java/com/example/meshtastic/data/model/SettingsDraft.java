@@ -25,6 +25,16 @@ public class SettingsDraft {
         for (int i = 0; i < MAX_CHANNELS; i++) channels[i] = new ChannelDraft(i);
     }
 
+    // Безопасность (раздел «Безопасность»)
+    public static final int MAX_ADMIN_KEYS = 3;
+    private final String[] adminKeys = new String[MAX_ADMIN_KEYS];
+
+    {
+        for (int i = 0; i < MAX_ADMIN_KEYS; i++) adminKeys[i] = "";
+    }
+
+    private boolean isManaged = false;
+
     public String getNodeName() {
         return nodeName;
     }
@@ -81,5 +91,22 @@ public class SettingsDraft {
     }
 
     public ChannelDraft[] getChannels() { return channels; }
+
+    public String getAdminKey(int index) {
+        if (index < 0 || index >= MAX_ADMIN_KEYS) {
+            throw new IndexOutOfBoundsException("admin key index " + index);
+        }
+        return adminKeys[index] == null ? "" : adminKeys[index];
+    }
+
+    public void setAdminKey(int index, String hex) {
+        if (index < 0 || index >= MAX_ADMIN_KEYS) {
+            throw new IndexOutOfBoundsException("admin key index " + index);
+        }
+        adminKeys[index] = hex == null ? "" : hex;
+    }
+
+    public boolean isManaged() { return isManaged; }
+    public void setManaged(boolean v) { this.isManaged = v; }
 }
 
