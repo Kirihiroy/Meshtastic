@@ -4,10 +4,12 @@ package com.example.meshtastic.data.model;
  * Локальный черновик настроек, сохраняется до применения на устройство.
  */
 public class SettingsDraft {
+    public static final int MAX_CHANNELS = 8;
+
     private String nodeName;
     private String region;             // LoRa: имя enum (UNSET, US, EU_868, ...)
-    private String channelName;
-    private String psk;
+    // channelName/psk теперь живут в channels[0] (primary), геттеры/сеттеры
+    // ниже делегируют туда — это сохраняет совместимость с MeshConnectionRepository.applyChannelPsk().
 
     // LoRa-параметры (черновик; применение на устройство — отдельным PR)
     private String loraModemPreset = "LONG_FAST";
@@ -15,6 +17,13 @@ public class SettingsDraft {
     private int loraTxPower = 20;       // 0..30 dBm
     private boolean loraTxEnabled = true;
     private boolean loraIgnoreMqtt = false;
+
+    // 8 слотов каналов: индекс 0 — PRIMARY, 1..7 — SECONDARY/DISABLED
+    private final ChannelDraft[] channels = new ChannelDraft[MAX_CHANNELS];
+
+    {
+        for (int i = 0; i < MAX_CHANNELS; i++) channels[i] = new ChannelDraft(i);
+    }
 
     public String getNodeName() {
         return nodeName;
@@ -33,19 +42,19 @@ public class SettingsDraft {
     }
 
     public String getChannelName() {
-        return channelName;
+        return channels[0].getName();
     }
 
     public void setChannelName(String channelName) {
-        this.channelName = channelName;
+        channels[0].setName(channelName);
     }
 
     public String getPsk() {
-        return psk;
+        return channels[0].getPsk();
     }
 
     public void setPsk(String psk) {
-        this.psk = psk;
+        channels[0].setPsk(psk);
     }
 
     public String getLoraModemPreset() { return loraModemPreset; }
@@ -62,5 +71,15 @@ public class SettingsDraft {
 
     public boolean isLoraIgnoreMqtt() { return loraIgnoreMqtt; }
     public void setLoraIgnoreMqtt(boolean v) { this.loraIgnoreMqtt = v; }
+
+    /** Возвращает черновик канала по индексу 0..7. */
+    public ChannelDraft getChannel(int index) {
+        if (index < 0 || index >= MAX_CHANNELS) {
+            throw new IndexOutOfBoundsException("channel index " + index);
+        }
+        return channels[index];
+    }
+
+    public ChannelDraft[] getChannels() { return channels; }
 }
 
