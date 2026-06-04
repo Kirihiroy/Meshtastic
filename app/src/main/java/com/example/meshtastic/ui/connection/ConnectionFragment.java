@@ -214,7 +214,8 @@ public class ConnectionFragment extends Fragment {
         }
     }
 
-    private String safeName(BluetoothDevice d) {
+    /** Безопасное имя устройства. Static, чтобы вызывать из nested static-адаптера. */
+    private static String safeName(BluetoothDevice d) {
         try {
             String n = d.getName();
             return (n == null || n.isEmpty()) ? d.getAddress() : n;
@@ -231,7 +232,7 @@ public class ConnectionFragment extends Fragment {
 
     // ───────────── adapter ─────────────
 
-    private class DevicesAdapter extends ListAdapter<BluetoothDevice, DevicesAdapter.VH> {
+    private static class DevicesAdapter extends ListAdapter<BluetoothDevice, DevicesAdapter.VH> {
 
         interface OnClick { void onClick(BluetoothDevice device); }
 
@@ -271,7 +272,7 @@ public class ConnectionFragment extends Fragment {
             h.itemView.setOnClickListener(v -> onClick.onClick(d));
         }
 
-        class VH extends RecyclerView.ViewHolder {
+        static class VH extends RecyclerView.ViewHolder {
             final TextView name;
             final RadioButton radio;
             VH(@NonNull View v) {
