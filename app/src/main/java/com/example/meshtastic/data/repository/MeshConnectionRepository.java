@@ -596,7 +596,23 @@ public class MeshConnectionRepository {
         MeshProtos.ToRadio msg = MeshProtos.ToRadio.newBuilder()
                 .setWantConfigId(configId)
                 .build();
-        sendToRadio(msg);
+        // Намеренно НЕ идём через sendToRadio: тот проверяет state.getValue() == CONNECTED,
+        // а нас сюда позвал onReady() сразу после state.postValue(CONNECTED). postValue
+        // асинхронный (постит задачу в main looper), поэтому state.getValue() в этот момент
+        // ещё CONNECTING — и want_config_id отбрасывается. Без него устройство не присылает
+        // NodeInfo/MyInfo/Config — и Ноды остаются пустыми. Пишем в транспорт напрямую:
+        // на этот момент BleManager уже сообщил onReady, т.е. CCCD активен и ToRadio готов.
+        bleManager.write(msg.toByteArray());
+    }
+
+    /**
+     * Публичный re-trigger want_config_id. UI может вызвать его, если соединение есть,
+     * а NodeInfo не подъехал (например, пользователь зашёл после connect, прошивка
+     * подвисла, или мы хотим обновить список нод вручную).
+     */
+    public void requestConfigManual() {
+        if (state.getValue() != State.CONNECTED) return;
+        requestConfig();
     }
 
     private NodeInfo convertNode(MeshProtos.NodeInfo ni) {
