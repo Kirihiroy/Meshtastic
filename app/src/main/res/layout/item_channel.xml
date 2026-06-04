@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="center_vertical"
+    android:minHeight="64dp"
+    android:orientation="horizontal"
+    android:paddingHorizontal="16dp"
+    android:paddingVertical="12dp">
+
+    <TextView
+        android:id="@+id/channel_index"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:background="@drawable/bg_node_badge"
+        android:fontFamily="monospace"
+        android:gravity="center"
+        android:textColor="@color/node_badge_text"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        tools:text="0" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/channel_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/app_on_surface"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            tools:text="LongFast" />
+
+        <TextView
+            android:id="@+id/channel_role"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/app_on_surface_muted"
+            android:textSize="12sp"
+            tools:text="PRIMARY" />
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/channel_lock"
+        android:layout_width="22dp"
+        android:layout_height="22dp"
+        android:layout_marginEnd="8dp"
+        android:contentDescription="@string/cd_lock"
+        android:src="@drawable/ic_lock_closed"
+        app:tint="@color/node_lock_green"
+        tools:visibility="visible" />
+
+    <ImageView
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:contentDescription="@null"
+        android:src="@drawable/ic_chevron_right"
+        app:tint="@color/app_on_surface_muted" />
+</LinearLayout>

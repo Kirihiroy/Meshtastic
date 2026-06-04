@@ -105,6 +105,108 @@
     <string name="lora_toast_bad_tx_power">TX мощность: укажите значение 0–30</string>
     <string name="cd_back">Назад</string>
 
+    <!-- Channels sub-screen -->
+    <string name="channels_title">Каналы</string>
+    <string name="channels_subtitle">Слот 0 — главный канал. Слоты 1–7 — дополнительные.</string>
+    <string name="channel_role_primary">PRIMARY</string>
+    <string name="channel_role_secondary">SECONDARY</string>
+    <string name="channel_role_disabled">DISABLED</string>
+    <string name="channel_name_placeholder">(без имени)</string>
+    <string name="channel_edit_title_format">Канал #%1$d</string>
+    <string name="channel_label_name">Имя канала</string>
+    <string name="channel_label_psk">Ключ PSK (hex 32 или 64 символа)</string>
+    <string name="channel_label_role">Роль</string>
+    <string name="channel_hint_name">например: GROUP</string>
+    <string name="channel_hint_psk">пусто = без шифрования</string>
+    <string name="channel_btn_save">Сохранить как черновик</string>
+    <string name="channel_toast_saved">Канал #%1$d сохранён</string>
+    <string name="channel_toast_bad_psk">PSK должен быть hex длиной 32 или 64 (или пустым)</string>
+    <string name="channel_toast_primary_role_locked">Канал #0 всегда PRIMARY</string>
+
+    <!-- Security sub-screen -->
+    <string name="security_title">Безопасность</string>
+    <string name="security_label_my_pubkey">Мой публичный ключ (E2E)</string>
+    <string name="security_label_admin_keys">Доверенные admin-ключи (hex)</string>
+    <string name="security_label_admin_key_format">Admin-ключ #%1$d</string>
+    <string name="security_label_is_managed">Управляется удалённо</string>
+    <string name="security_hint_admin_key">hex (X.509 EC publickey)</string>
+    <string name="security_btn_save">Сохранить как черновик</string>
+    <string name="security_btn_copy">Копировать</string>
+    <string name="security_toast_pubkey_copied">Публичный ключ скопирован</string>
+    <string name="security_toast_pubkey_unavailable">Ключ недоступен</string>
+    <string name="security_toast_saved">Безопасность: черновик сохранён</string>
+    <string name="security_toast_bad_admin_key">Admin-ключ #%1$d: ожидается hex или пусто</string>
+    <string name="cd_copy">Копировать</string>
+
+    <!-- User sub-screen -->
+    <string name="user_title">Пользователь</string>
+    <string name="user_label_long_name">Имя (long name)</string>
+    <string name="user_label_short_name">Короткое имя (до 4 символов)</string>
+    <string name="user_label_role">Роль</string>
+    <string name="user_label_is_licensed">HAM-оператор (is_licensed)</string>
+    <string name="user_hint_long_name">например: Алексей</string>
+    <string name="user_hint_short_name">ALX1</string>
+    <string name="user_btn_save">Сохранить как черновик</string>
+    <string name="user_toast_saved">Пользователь: черновик сохранён</string>
+    <string name="user_toast_bad_short_name">Короткое имя: до 4 символов</string>
+
+    <!-- Device sub-screen -->
+    <string name="device_title">Устройство</string>
+    <string name="device_label_rebroadcast">Режим ретрансляции</string>
+    <string name="device_label_nodeinfo_secs">Период NodeInfo (сек)</string>
+    <string name="device_label_serial">Serial-консоль включена</string>
+    <string name="device_label_debug_log">Подробные debug-логи</string>
+    <string name="device_label_led_off">Отключить LED-heartbeat</string>
+    <string name="device_btn_save">Сохранить как черновик</string>
+    <string name="device_toast_saved">Устройство: черновик сохранён</string>
+
+    <!-- Location sub-screen -->
+    <string name="location_title">Местоположение</string>
+    <string name="location_label_gps_mode">Режим GPS</string>
+    <string name="location_label_broadcast_secs">Период отправки позиции (сек)</string>
+    <string name="location_label_fixed">Фиксированная позиция</string>
+    <string name="location_label_smart">Smart Position (умная отправка)</string>
+    <string name="location_btn_save">Сохранить как черновик</string>
+    <string name="location_toast_saved">Местоположение: черновик сохранён</string>
+
+    <!-- Power sub-screen -->
+    <string name="power_title">Питание</string>
+    <string name="power_label_saving">Режим энергосбережения</string>
+    <string name="power_label_shutdown">Выкл. при батарее, через (сек, 0 = выкл)</string>
+    <string name="power_label_wait_bt">Ожидание BT при загрузке (сек)</string>
+    <string name="power_label_min_wake">Минимальный wake-период (сек)</string>
+    <string name="power_btn_save">Сохранить как черновик</string>
+    <string name="power_toast_saved">Питание: черновик сохранён</string>
+
+    <!-- Network sub-screen -->
+    <string name="network_title">Сеть</string>
+    <string name="network_label_wifi_enabled">Wi-Fi включен</string>
+    <string name="network_label_wifi_ssid">Wi-Fi SSID</string>
+    <string name="network_label_wifi_psk">Wi-Fi пароль</string>
+    <string name="network_label_ntp">NTP сервер</string>
+    <string name="network_label_eth_enabled">Ethernet включен</string>
+    <string name="network_btn_save">Сохранить как черновик</string>
+    <string name="network_toast_saved">Сеть: черновик сохранён</string>
+
+    <!-- Display sub-screen -->
+    <string name="display_title">Дисплей</string>
+    <string name="display_label_screen_on">Экран включён (сек, 0 = всегда)</string>
+    <string name="display_label_units">Единицы измерения</string>
+    <string name="display_label_flip">Перевернуть экран</string>
+    <string name="display_label_12h">12-часовое время</string>
+    <string name="display_label_heading_bold">Жирные заголовки</string>
+    <string name="display_btn_save">Сохранить как черновик</string>
+    <string name="display_toast_saved">Дисплей: черновик сохранён</string>
+
+    <!-- Bluetooth sub-screen -->
+    <string name="bluetooth_title">Bluetooth</string>
+    <string name="bluetooth_label_enabled">Bluetooth включен</string>
+    <string name="bluetooth_label_mode">Режим pairing</string>
+    <string name="bluetooth_label_fixed_pin">Фиксированный PIN (6 цифр)</string>
+    <string name="bluetooth_btn_save">Сохранить как черновик</string>
+    <string name="bluetooth_toast_saved">Bluetooth: черновик сохранён</string>
+    <string name="bluetooth_toast_bad_pin">PIN: ровно 6 цифр</string>
+
     <!-- SettingsFragment (старая форма — оставлено для будущих под-экранов) -->
     <string name="settings_title">Панель конфигурации</string>
     <string name="settings_subtitle">Сеть, безопасность и идентификация узла</string>

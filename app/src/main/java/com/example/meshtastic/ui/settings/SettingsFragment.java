@@ -37,25 +37,25 @@ public class SettingsFragment extends Fragment {
         bindEntry(binding.entryLora.getRoot(), R.drawable.ic_lora,
                 R.string.settings_entry_lora, LoRaSettingsFragment::new);
         bindEntry(binding.entryChannels.getRoot(), R.drawable.ic_list,
-                R.string.settings_entry_channels, null);
+                R.string.settings_entry_channels, ChannelsSettingsFragment::new);
         bindEntry(binding.entrySecurity.getRoot(), R.drawable.ic_shield,
-                R.string.settings_entry_security, null);
+                R.string.settings_entry_security, SecuritySettingsFragment::new);
 
         // Группа: Настройки устройства
         bindEntry(binding.entryUser.getRoot(), R.drawable.ic_person,
-                R.string.settings_entry_user, null);
+                R.string.settings_entry_user, UserSettingsFragment::new);
         bindEntry(binding.entryDevice.getRoot(), R.drawable.ic_router,
-                R.string.settings_entry_device, null);
+                R.string.settings_entry_device, DeviceSettingsFragment::new);
         bindEntry(binding.entryLocation.getRoot(), R.drawable.ic_location_pin,
-                R.string.settings_entry_location, null);
+                R.string.settings_entry_location, LocationSettingsFragment::new);
         bindEntry(binding.entryPower.getRoot(), R.drawable.ic_plug,
-                R.string.settings_entry_power, null);
+                R.string.settings_entry_power, PowerSettingsFragment::new);
         bindEntry(binding.entryNetwork.getRoot(), R.drawable.ic_wifi,
-                R.string.settings_entry_network, null);
+                R.string.settings_entry_network, NetworkSettingsFragment::new);
         bindEntry(binding.entryDisplay.getRoot(), R.drawable.ic_display,
-                R.string.settings_entry_display, null);
+                R.string.settings_entry_display, DisplaySettingsFragment::new);
         bindEntry(binding.entryBluetooth.getRoot(), R.drawable.ic_bluetooth,
-                R.string.settings_entry_bluetooth, null);
+                R.string.settings_entry_bluetooth, BluetoothSettingsFragment::new);
 
         return binding.getRoot();
     }
