@@ -44,13 +44,18 @@
         android:textSize="14sp"
         tools:text="(онлайн 1 / показано 3 / всего 3)" />
 
-    <!-- Статус-баннер (бывшая Панель состояния — теперь компактно вверху Нод) -->
+    <!-- Статус-баннер (бывшая Панель состояния — теперь компактно вверху Нод).
+         Клик по нему переотправляет want_config_id — если устройство «зависло»
+         и не присылает NodeInfo, обычно достаточно ткнуть один раз. -->
     <LinearLayout
         android:id="@+id/nodes_status_banner"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="14dp"
         android:background="@drawable/bg_settings_card"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground"
         android:orientation="vertical"
         android:padding="12dp">
 

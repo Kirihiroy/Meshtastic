@@ -68,6 +68,14 @@ public class NodesFragment extends Fragment {
         repo.getNodes().observe(getViewLifecycleOwner(), this::renderNodes);
         repo.getDeviceStatus().observe(getViewLifecycleOwner(), this::renderStatusBanner);
 
+        // Тап по статус-баннеру → переотправить want_config_id (если соединение есть).
+        binding.nodesStatusBanner.setOnClickListener(v -> {
+            repo.requestConfigManual();
+            android.widget.Toast.makeText(requireContext(),
+                    "Запрашиваю конфигурацию…",
+                    android.widget.Toast.LENGTH_SHORT).show();
+        });
+
         return binding.getRoot();
     }
 
