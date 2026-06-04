@@ -1,42 +1,36 @@
 <resources>
     <string name="app_name">Meshtastic</string>
 
-    <!-- ConnectionFragment -->
-    <string name="connection_title">Контроль подключения</string>
-    <string name="connection_subtitle">Поиск устройства, канал связи и диагностика</string>
-    <string name="connection_status_initial">Проверка состояния Bluetooth...</string>
-    <string name="connection_btn_scan">Поиск устройств</string>
+    <!-- ConnectionFragment (новый дизайн «Соединение») -->
+    <string name="nav_connection">Соединение</string>
+    <string name="connection_title">Соединение</string>
+    <string name="connection_no_device">Устройство не выбрано</string>
+    <string name="connection_paired_devices">Сопряжённые устройства</string>
+    <string name="connection_tab_bluetooth">Bluetooth</string>
+    <string name="connection_tab_network">Сеть</string>
+    <string name="connection_tab_com">COM-порт</string>
+    <string name="connection_btn_scan">Сканирование</string>
+    <string name="connection_btn_stop_scan">Остановить сканирование</string>
     <string name="connection_btn_connect">Подключиться</string>
-    <string name="connection_btn_send_test">Отправить тест (ping)</string>
-    <string name="connection_devicelist_initial">Нажмите «Поиск устройств» для начала</string>
-    <string name="connection_lastrx_label">Последние входящие байты (hex):</string>
-    <string name="connection_dash">—</string>
-    <string name="connection_hint">Подсказка:\n• Включите Meshtastic и держите устройство рядом.\n• Убедитесь, что Bluetooth и геолокация активны.\n• Запустите поиск, затем подключитесь к найденному узлу.</string>
-
-    <string name="connection_bluetooth_off">Bluetooth выключен. Включите Bluetooth в настройках.</string>
-    <string name="connection_bluetooth_on">Bluetooth включен. Готов к поиску устройств.</string>
+    <string name="connection_btn_disconnect">Отключиться</string>
+    <string name="connection_chip_disconnected">Нет соединения</string>
+    <string name="connection_chip_scanning">Сканирование…</string>
+    <string name="connection_chip_connecting">Подключение…</string>
+    <string name="connection_chip_connected">Подключено</string>
     <string name="connection_toast_enable_bt">Включите Bluetooth</string>
     <string name="connection_toast_select_device">Сначала выберите устройство</string>
     <string name="connection_toast_permissions_granted">Разрешения предоставлены</string>
     <string name="connection_toast_permissions_required">Необходимы разрешения для работы Bluetooth</string>
-    <string name="connection_status_scanning">Поиск BLE устройств Meshtastic...</string>
-    <string name="connection_status_searching">Поиск…</string>
-    <string name="connection_status_no_devices">Устройства не найдены. Убедитесь, что Heltec включен и рядом.\n</string>
-    <string name="connection_status_connecting">Подключение...</string>
+    <string name="connection_toast_tab_not_implemented">Транспорт «%1$s» — пока не реализован</string>
     <string name="connection_device_unknown">Неизвестное устройство</string>
-    <string name="connection_device_line">%1$d. %2$s\n   %3$s\n\n</string>
-    <string name="connection_test_sent">Запрос конфигурации отправлен</string>
-    <string name="connection_test_failed">Не удалось отправить</string>
 
-    <!-- StatusFragment -->
-    <string name="status_title">Панель состояния</string>
-    <string name="status_subtitle">Сигналы, пакеты и события соединения</string>
-    <string name="status_label_state">Состояние:</string>
-    <string name="status_label_message">Сообщение:</string>
-    <string name="status_label_lastrx_hex">Последние входящие байты (hex):</string>
-    <string name="status_label_parsed">Расшифрованное FromRadio сообщение:</string>
-    <string name="status_label_details">Детали устройства:</string>
-    <string name="status_label_data_source">Данные берутся из protobuf FromRadio: my_info, node_info, config, packet и др.</string>
+    <!-- NodesFragment — статус-баннер (бывшая Панель состояния) -->
+    <string name="nodes_status_label">Подключение</string>
+    <string name="nodes_status_firmware_label">Прошивка</string>
+    <string name="nodes_status_battery_label">Батарея</string>
+    <string name="nodes_status_snr_label">SNR</string>
+    <string name="nodes_status_last_rx_label">Последний RX</string>
+    <string name="nodes_status_dash">—</string>
 
     <!-- NodesFragment -->
     <string name="nav_nodes">Ноды</string>

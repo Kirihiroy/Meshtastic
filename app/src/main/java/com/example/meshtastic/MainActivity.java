@@ -16,7 +16,6 @@ import com.example.meshtastic.ui.connection.ConnectionFragment;
 import com.example.meshtastic.ui.e2e.E2eDmFragment;
 import com.example.meshtastic.ui.nodes.NodesFragment;
 import com.example.meshtastic.ui.settings.SettingsFragment;
-import com.example.meshtastic.ui.status.StatusFragment;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -38,9 +37,6 @@ public class MainActivity extends AppCompatActivity {
         binding.bottomNav.setOnItemSelectedListener(item -> {
             if (item.getItemId() == R.id.nav_connection) {
                 showFragment(new ConnectionFragment());
-                return true;
-            } else if (item.getItemId() == R.id.nav_status) {
-                showFragment(new StatusFragment());
                 return true;
             } else if (item.getItemId() == R.id.nav_nodes) {
                 showFragment(new NodesFragment());

@@ -2,12 +2,8 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/nav_connection"
-        android:title="Подключение"
+        android:title="@string/nav_connection"
         android:icon="@android:drawable/stat_sys_data_bluetooth" />
-    <item
-        android:id="@+id/nav_status"
-        android:title="Статус"
-        android:icon="@android:drawable/ic_menu_info_details" />
     <item
         android:id="@+id/nav_nodes"
         android:title="@string/nav_nodes"
