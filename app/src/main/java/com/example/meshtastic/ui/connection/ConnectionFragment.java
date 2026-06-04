@@ -8,80 +8,191 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.RadioButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.ListAdapter;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.meshtastic.R;
 import com.example.meshtastic.data.repository.MeshConnectionRepository;
+import com.example.meshtastic.data.repository.MeshConnectionRepository.State;
 import com.example.meshtastic.databinding.FragmentConnectionBinding;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Фрагмент для поиска и подключения к устройству Meshtastic через BLE.
+ * Экран «Соединение» — выбор и подключение к Meshtastic-устройству по BLE.
+ * Дизайн повторяет оригинальное Meshtastic-Android: большая карточка статуса,
+ * сегмент-контрол транспортов (BT/Сеть/COM), список устройств с радио-кнопкой
+ * и одна state-зависимая кнопка действия.
  */
 public class ConnectionFragment extends Fragment {
+
     private static final int REQUEST_BLUETOOTH_PERMISSIONS = 100;
     private static final int REQUEST_LOCATION_PERMISSION = 101;
 
     private FragmentConnectionBinding binding;
     private MeshConnectionRepository repo;
+    private DevicesAdapter adapter;
     private BluetoothDevice selectedDevice;
+    private State lastState = State.DISCONNECTED;
+    private boolean scanning = false;
 
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentConnectionBinding.inflate(inflater, container, false);
-
         repo = MeshConnectionRepository.getInstance(requireContext());
 
-        repo.getStatusText().observe(getViewLifecycleOwner(), text -> {
-            if (binding == null) return;
-            binding.statusText.setText(text);
-            binding.progressBar.setVisibility(View.GONE);
-            binding.connectButton.setEnabled(true);
-            binding.sendTestButton.setEnabled(text != null && text.startsWith("Подключено"));
+        binding.connDevicesRecycler.setLayoutManager(new LinearLayoutManager(requireContext()));
+        adapter = new DevicesAdapter(device -> {
+            selectedDevice = device;
+            repo.selectDevice(device);
+            adapter.setSelectedAddress(device.getAddress());
+            renderState(lastState);
         });
+        binding.connDevicesRecycler.setAdapter(adapter);
 
-        repo.getLastRx().observe(getViewLifecycleOwner(), data -> {
-            if (binding == null) return;
-            if (data == null || data.length == 0) {
-                binding.lastRxText.setText(R.string.connection_dash);
-            } else {
-                binding.lastRxText.setText(toHex(data));
-            }
+        // Сегмент-контрол — только Bluetooth активен в MVP.
+        binding.connTabBt.setOnClickListener(v -> {
+            // Уже выбрана — ничего не делаем.
         });
+        binding.connTabNet.setOnClickListener(v -> tabPlaceholder(R.string.connection_tab_network));
+        binding.connTabCom.setOnClickListener(v -> tabPlaceholder(R.string.connection_tab_com));
 
-        binding.scanButton.setOnClickListener(v -> scanForDevices());
-        binding.connectButton.setOnClickListener(v -> connectToDevice());
-        binding.connectButton.setEnabled(false);
-        binding.sendTestButton.setEnabled(false);
-        binding.sendTestButton.setOnClickListener(v -> sendTest());
+        binding.connActionButton.setOnClickListener(v -> onActionClicked());
+
+        repo.getState().observe(getViewLifecycleOwner(), this::renderState);
+        repo.getDevices().observe(getViewLifecycleOwner(), this::renderDevices);
+
+        // Если уже было соединение/устройство — отразим в адаптере.
+        BluetoothDevice already = repo.getSelectedDevice().getValue();
+        if (already != null) {
+            selectedDevice = already;
+            adapter.setSelectedAddress(already.getAddress());
+        }
 
         checkPermissions();
-        updateBluetoothStatus();
-
         return binding.getRoot();
+    }
+
+    /** Главная кнопка: smart-actions в зависимости от текущего состояния. */
+    private void onActionClicked() {
+        State st = lastState;
+        if (scanning) {
+            repo.stopScan();
+            scanning = false;
+            renderState(st);
+            return;
+        }
+        if (st == State.CONNECTED || st == State.CONNECTING) {
+            repo.disconnect();
+            return;
+        }
+        if (selectedDevice != null) {
+            if (!repo.isBluetoothEnabled()) {
+                Toast.makeText(requireContext(), R.string.connection_toast_enable_bt, Toast.LENGTH_SHORT).show();
+                return;
+            }
+            repo.connect();
+            return;
+        }
+        // ничего не выбрано — запускаем сканирование
+        if (!repo.isBluetoothEnabled()) {
+            Toast.makeText(requireContext(), R.string.connection_toast_enable_bt, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        scanning = true;
+        repo.startScan();
+        renderState(st);
+        // Авто-остановка через 8 сек
+        if (binding != null) {
+            binding.connActionButton.postDelayed(() -> {
+                if (binding == null) return;
+                if (scanning) {
+                    repo.stopScan();
+                    scanning = false;
+                    renderState(lastState);
+                }
+            }, 8000);
+        }
+    }
+
+    private void renderState(State state) {
+        if (binding == null) return;
+        if (state != null) lastState = state;
+
+        // Большая карточка
+        if (lastState == State.CONNECTED || lastState == State.CONNECTING) {
+            binding.connBigIcon.setImageResource(R.drawable.ic_router_big);
+            binding.connBigText.setText(selectedDevice != null
+                    ? safeName(selectedDevice)
+                    : getString(R.string.connection_chip_connected));
+        } else if (selectedDevice != null) {
+            binding.connBigIcon.setImageResource(R.drawable.ic_router_big);
+            binding.connBigText.setText(safeName(selectedDevice));
+        } else {
+            binding.connBigIcon.setImageResource(R.drawable.ic_router_off);
+            binding.connBigText.setText(R.string.connection_no_device);
+        }
+
+        // Кнопка-действие
+        if (scanning) {
+            binding.connActionButton.setText(R.string.connection_btn_stop_scan);
+            binding.connActionButton.setIconResource(R.drawable.ic_search);
+        } else if (lastState == State.CONNECTED) {
+            binding.connActionButton.setText(R.string.connection_btn_disconnect);
+            binding.connActionButton.setIconResource(R.drawable.ic_cloud_off);
+        } else if (lastState == State.CONNECTING) {
+            binding.connActionButton.setText(R.string.connection_chip_connecting);
+            binding.connActionButton.setIconResource(R.drawable.ic_search);
+        } else if (selectedDevice != null) {
+            binding.connActionButton.setText(R.string.connection_btn_connect);
+            binding.connActionButton.setIconResource(R.drawable.ic_router);
+        } else {
+            binding.connActionButton.setText(R.string.connection_btn_scan);
+            binding.connActionButton.setIconResource(R.drawable.ic_search);
+        }
+
+        // Чип статуса
+        int chipText;
+        if (scanning) chipText = R.string.connection_chip_scanning;
+        else if (lastState == State.CONNECTED) chipText = R.string.connection_chip_connected;
+        else if (lastState == State.CONNECTING) chipText = R.string.connection_chip_connecting;
+        else chipText = R.string.connection_chip_disconnected;
+        binding.connStatusChip.setText(chipText);
+    }
+
+    private void renderDevices(List<BluetoothDevice> devices) {
+        adapter.submitList(devices == null ? new ArrayList<>() : new ArrayList<>(devices));
+    }
+
+    private void tabPlaceholder(int tabLabelRes) {
+        Toast.makeText(requireContext(),
+                getString(R.string.connection_toast_tab_not_implemented, getString(tabLabelRes)),
+                Toast.LENGTH_SHORT).show();
     }
 
     private void checkPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (ContextCompat.checkSelfPermission(requireContext(),
-                    Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(requireContext(),
-                    Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-
+            boolean needScan = ContextCompat.checkSelfPermission(requireContext(),
+                    Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED;
+            boolean needConnect = ContextCompat.checkSelfPermission(requireContext(),
+                    Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED;
+            if (needScan || needConnect) {
                 ActivityCompat.requestPermissions(requireActivity(),
-                        new String[]{
-                                Manifest.permission.BLUETOOTH_SCAN,
-                                Manifest.permission.BLUETOOTH_CONNECT
-                        },
+                        new String[]{Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT},
                         REQUEST_BLUETOOTH_PERMISSIONS);
             }
         }
-
         if (ContextCompat.checkSelfPermission(requireContext(),
                 Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(requireActivity(),
@@ -91,138 +202,83 @@ public class ConnectionFragment extends Fragment {
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        if (requestCode == REQUEST_BLUETOOTH_PERMISSIONS ||
-            requestCode == REQUEST_LOCATION_PERMISSION) {
+        if (requestCode == REQUEST_BLUETOOTH_PERMISSIONS || requestCode == REQUEST_LOCATION_PERMISSION) {
             boolean allGranted = true;
-            for (int result : grantResults) {
-                if (result != PackageManager.PERMISSION_GRANTED) {
-                    allGranted = false;
-                    break;
-                }
-            }
-
-            if (allGranted) {
-                Toast.makeText(requireContext(), R.string.connection_toast_permissions_granted, Toast.LENGTH_SHORT).show();
-                updateBluetoothStatus();
-            } else {
-                Toast.makeText(requireContext(),
-                        R.string.connection_toast_permissions_required,
-                        Toast.LENGTH_LONG).show();
-            }
+            for (int r : grantResults) if (r != PackageManager.PERMISSION_GRANTED) { allGranted = false; break; }
+            int msg = allGranted
+                    ? R.string.connection_toast_permissions_granted
+                    : R.string.connection_toast_permissions_required;
+            Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show();
         }
     }
 
-    private void updateBluetoothStatus() {
-        if (repo == null || binding == null) return;
-
-        if (!repo.isBluetoothEnabled()) {
-            binding.statusText.setText(R.string.connection_bluetooth_off);
-            binding.statusText.setTextColor(ContextCompat.getColor(requireContext(),
-                    android.R.color.holo_red_dark));
-            binding.scanButton.setEnabled(false);
-        } else {
-            binding.statusText.setText(R.string.connection_bluetooth_on);
-            binding.statusText.setTextColor(ContextCompat.getColor(requireContext(),
-                    android.R.color.holo_green_dark));
-            binding.scanButton.setEnabled(true);
+    private String safeName(BluetoothDevice d) {
+        try {
+            String n = d.getName();
+            return (n == null || n.isEmpty()) ? d.getAddress() : n;
+        } catch (SecurityException e) {
+            return d.getAddress();
         }
-
-        binding.connectButton.setText(R.string.connection_btn_connect);
-        binding.sendTestButton.setEnabled(false);
-    }
-
-    private void scanForDevices() {
-        if (!repo.isBluetoothEnabled()) {
-            Toast.makeText(requireContext(),
-                    R.string.connection_toast_enable_bt,
-                    Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        binding.progressBar.setVisibility(View.VISIBLE);
-        binding.scanButton.setEnabled(false);
-        binding.deviceListText.setText(R.string.connection_status_scanning);
-        binding.connectButton.setEnabled(false);
-
-        repo.startScan();
-
-        repo.getDevices().observe(getViewLifecycleOwner(), devices -> {
-            if (binding == null) return;
-            binding.deviceListText.setText("");
-            if (devices == null || devices.isEmpty()) {
-                binding.deviceListText.setText(R.string.connection_status_searching);
-                binding.connectButton.setEnabled(false);
-                return;
-            }
-            int i = 1;
-            for (BluetoothDevice d : devices) {
-                String name = d.getName() != null ? d.getName() : getString(R.string.connection_device_unknown);
-                binding.deviceListText.append(getString(R.string.connection_device_line, i, name, d.getAddress()));
-                i++;
-            }
-            if (selectedDevice == null) {
-                selectedDevice = devices.get(0);
-                repo.selectDevice(selectedDevice);
-                binding.connectButton.setEnabled(true);
-            }
-        });
-
-        binding.scanButton.postDelayed(() -> {
-            if (binding == null) return;
-            repo.stopScan();
-            binding.progressBar.setVisibility(View.GONE);
-            binding.scanButton.setEnabled(true);
-            if (selectedDevice == null) {
-                binding.deviceListText.append(getString(R.string.connection_status_no_devices));
-            }
-        }, 6000);
-    }
-
-    private void connectToDevice() {
-        if (selectedDevice == null) {
-            Toast.makeText(requireContext(),
-                    R.string.connection_toast_select_device,
-                    Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        binding.progressBar.setVisibility(View.VISIBLE);
-        binding.connectButton.setEnabled(false);
-        binding.statusText.setText(R.string.connection_status_connecting);
-
-        repo.selectDevice(selectedDevice);
-        repo.connect();
-    }
-
-    private void sendTest() {
-        // Запрос конфигурации - устройство ВСЕГДА отвечает на want_config_id
-        int configId = (int) (System.currentTimeMillis() & 0x7fffffff);
-        boolean ok = repo.sendToRadio(
-                org.meshtastic.proto.MeshProtos.ToRadio.newBuilder()
-                        .setWantConfigId(configId)
-                        .build()
-        );
-        Toast.makeText(requireContext(),
-                ok ? R.string.connection_test_sent : R.string.connection_test_failed,
-                Toast.LENGTH_SHORT).show();
-    }
-
-    private static String toHex(byte[] data) {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : data) {
-            sb.append(String.format("%02X ", b));
-        }
-        return sb.toString().trim();
     }
 
     @Override
     public void onDestroyView() {
         binding = null;
         super.onDestroyView();
-        // Соединение НЕ закрываем: оно общее для приложения и нужно другим экранам.
+    }
+
+    // ───────────── adapter ─────────────
+
+    private class DevicesAdapter extends ListAdapter<BluetoothDevice, DevicesAdapter.VH> {
+
+        interface OnClick { void onClick(BluetoothDevice device); }
+
+        private final OnClick onClick;
+        private String selectedAddress;
+
+        DevicesAdapter(OnClick onClick) {
+            super(new DiffUtil.ItemCallback<BluetoothDevice>() {
+                @Override public boolean areItemsTheSame(@NonNull BluetoothDevice a, @NonNull BluetoothDevice b) {
+                    return a.getAddress().equals(b.getAddress());
+                }
+                @Override public boolean areContentsTheSame(@NonNull BluetoothDevice a, @NonNull BluetoothDevice b) {
+                    return a.getAddress().equals(b.getAddress());
+                }
+            });
+            this.onClick = onClick;
+        }
+
+        void setSelectedAddress(String addr) {
+            selectedAddress = addr;
+            notifyDataSetChanged();
+        }
+
+        @NonNull
+        @Override
+        public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            View v = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_connection_device, parent, false);
+            return new VH(v);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull VH h, int position) {
+            BluetoothDevice d = getItem(position);
+            h.name.setText(safeName(d));
+            h.radio.setChecked(d.getAddress().equals(selectedAddress));
+            h.itemView.setOnClickListener(v -> onClick.onClick(d));
+        }
+
+        class VH extends RecyclerView.ViewHolder {
+            final TextView name;
+            final RadioButton radio;
+            VH(@NonNull View v) {
+                super(v);
+                name = v.findViewById(R.id.device_name);
+                radio = v.findViewById(R.id.device_radio);
+            }
+        }
     }
 }
