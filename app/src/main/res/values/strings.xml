@@ -238,6 +238,21 @@
     <string name="chat_date_yesterday">Вчера</string>
     <string name="chat_copied">Скопировано</string>
 
+    <!-- Chat redesign -->
+    <string name="chat_title">Чат</string>
+    <string name="chat_subtitle_format">Канал: %1$s · участников: %2$d</string>
+    <string name="chat_channel_default">LongFast</string>
+    <string name="chat_hops_format">%1$d hops</string>
+    <string name="chat_attach_desc">Прикрепить</string>
+    <string name="chat_send_desc">Отправить</string>
+    <string name="chat_new_messages_format">↓ %1$d новых</string>
+    <string name="cd_msg_status">Статус доставки</string>
+    <string name="chat_msg_action_copy">Скопировать</string>
+    <string name="chat_msg_action_reply">Ответить</string>
+    <string name="chat_msg_action_delete">Удалить локально</string>
+    <string name="chat_msg_action_reply_toast">Ответы пока не реализованы</string>
+    <string name="chat_msg_action_delete_toast">Локальное удаление пока не реализовано</string>
+
     <!-- E2eDmFragment -->
     <string name="e2e_to_label">Кому: %1$s</string>
     <string name="e2e_recipient_not_set">Получатель не указан</string>
