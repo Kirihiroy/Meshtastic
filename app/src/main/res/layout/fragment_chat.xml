@@ -1,40 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/app_background"
     android:orientation="vertical">
 
+    <!-- Шапка: лого + «Чат» + строка про канал -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingHorizontal="12dp"
-        android:paddingVertical="8dp"
-        android:background="?attr/colorSurfaceVariant">
+        android:orientation="vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="8dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:contentDescription="@string/cd_logo"
+                android:src="@drawable/ic_logo_mesh"
+                app:tint="@color/app_on_surface" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="@string/chat_title"
+                android:textColor="@color/app_on_surface"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+        </LinearLayout>
 
         <TextView
-            android:layout_width="0dp"
+            android:id="@+id/tv_chat_subtitle"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/chat_recipient_broadcast"
-            android:textStyle="bold"
-            android:textSize="13sp" />
-
+            android:layout_marginStart="44dp"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/app_on_surface_muted"
+            android:textSize="13sp"
+            tools:text="Канал: LongFast · участников: 3" />
     </LinearLayout>
 
+    <!-- Баннер «нет подключения» -->
     <TextView
         android:id="@+id/tv_no_connection_banner"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/chat_no_connection_banner"
+        android:background="#B00020"
         android:gravity="center"
         android:padding="6dp"
+        android:text="@string/chat_no_connection_banner"
         android:textColor="#FFFFFF"
-        android:background="#B00020"
         android:textSize="12sp"
         android:visibility="gone" />
 
+    <!-- Лента сообщений + пустое состояние + FAB «новые» -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -44,52 +73,98 @@
             android:id="@+id/rv_messages"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:padding="8dp"
-            android:clipToPadding="false" />
+            android:clipToPadding="false"
+            android:paddingVertical="8dp" />
 
         <TextView
             android:id="@+id/tv_empty_chat"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
+            android:gravity="center"
+            android:padding="32dp"
             android:text="@string/chat_empty_state"
             android:textColor="@color/app_on_surface_muted"
             android:textSize="14sp"
-            android:gravity="center"
-            android:padding="32dp"
             android:visibility="gone" />
 
+        <!-- FAB «N новых» — появляется когда пользователь прокрутил вверх. -->
+        <TextView
+            android:id="@+id/btn_new_messages"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/bg_new_messages_fab"
+            android:clickable="true"
+            android:elevation="6dp"
+            android:focusable="true"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="8dp"
+            android:textColor="@color/app_on_primary"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            tools:text="↓ 3 новых"
+            tools:visibility="visible" />
     </FrameLayout>
 
+    <!-- Поле ввода: иконка вложения + поле + круглая кнопка отправки -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="8dp"
+        android:background="@color/app_background"
         android:gravity="center_vertical"
-        android:background="?attr/colorSurface"
-        android:elevation="4dp">
+        android:orientation="horizontal"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="8dp">
 
-        <EditText
-            android:id="@+id/et_message"
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:hint="@string/chat_hint_message"
-            android:inputType="textMultiLine|textCapSentences"
-            android:maxLines="4"
-            android:freezesText="true"
-            android:imeOptions="actionSend" />
+            android:background="@drawable/bg_chat_input"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="6dp"
+            android:paddingVertical="2dp">
+
+            <ImageButton
+                android:id="@+id/btn_attach"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/chat_attach_desc"
+                android:src="@drawable/ic_attach"
+                app:tint="@color/app_on_surface_muted" />
+
+            <EditText
+                android:id="@+id/et_message"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@android:color/transparent"
+                android:freezesText="true"
+                android:hint="@string/chat_hint_message"
+                android:imeOptions="actionSend"
+                android:inputType="textMultiLine|textCapSentences"
+                android:maxLines="4"
+                android:minHeight="40dp"
+                android:paddingHorizontal="6dp"
+                android:textColor="@color/app_on_surface"
+                android:textColorHint="@color/app_on_surface_muted"
+                android:textSize="15sp" />
+        </LinearLayout>
 
         <ImageButton
             android:id="@+id/btn_send"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_marginStart="8dp"
-            android:src="@android:drawable/ic_menu_send"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/chat_btn_send_desc" />
-
+            android:background="@drawable/bg_send_button"
+            android:contentDescription="@string/chat_send_desc"
+            android:src="@drawable/ic_send"
+            app:tint="@color/app_on_primary" />
     </LinearLayout>
-
 </LinearLayout>

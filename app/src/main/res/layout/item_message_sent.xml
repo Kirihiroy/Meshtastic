@@ -1,43 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingVertical="3dp"
-    android:paddingHorizontal="12dp">
+    android:gravity="end|bottom"
+    android:orientation="horizontal"
+    android:paddingHorizontal="10dp"
+    android:paddingVertical="2dp">
 
     <LinearLayout
+        android:id="@+id/bubble_container"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="end"
+        android:background="@drawable/bg_bubble_outgoing"
+        android:maxWidth="280dp"
         android:orientation="vertical"
-        android:background="@drawable/bg_message_sent"
         android:paddingHorizontal="12dp"
-        android:paddingVertical="8dp"
-        android:maxWidth="280dp">
+        android:paddingVertical="8dp">
 
         <TextView
             android:id="@+id/tv_message_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@color/bubble_sent_text"
-            android:textSize="15sp" />
+            android:textColor="@color/chat_bubble_outgoing_text"
+            android:textSize="15sp"
+            tools:text="Окей, я готов. Выхожу через 5 минут." />
 
-        <TextView
-            android:id="@+id/tv_message_time"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="end"
-            android:textColor="@color/bubble_sent_time"
-            android:textSize="11sp"
-            android:paddingTop="2dp" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingTop="2dp">
 
-        <!-- stub so ChatAdapter.tvSender lookup doesn't crash -->
+            <TextView
+                android:id="@+id/tv_message_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/chat_bubble_outgoing_time"
+                android:textSize="11sp"
+                tools:text="14:30" />
+
+            <ImageView
+                android:id="@+id/iv_delivery_status"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:layout_marginStart="4dp"
+                android:contentDescription="@string/cd_msg_status"
+                android:src="@drawable/ic_check"
+                app:tint="@color/chat_bubble_outgoing_time"
+                tools:src="@drawable/ic_check_double" />
+        </LinearLayout>
+
+        <!-- Stub: ChatAdapter.tvSender ищется через findViewById; в исходящих не показывается. -->
         <TextView
             android:id="@+id/tv_message_sender"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:visibility="gone" />
-
     </LinearLayout>
-
-</FrameLayout>
+</LinearLayout>

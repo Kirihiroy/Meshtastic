@@ -1,45 +1,119 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingVertical="3dp"
-    android:paddingHorizontal="12dp">
+    android:gravity="bottom"
+    android:orientation="horizontal"
+    android:paddingHorizontal="10dp"
+    android:paddingVertical="2dp">
+
+    <!-- Аватар: цветной кружок с короткими инициалами. Скрывается у "продолжения" группы. -->
+    <TextView
+        android:id="@+id/avatar_badge"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:background="@drawable/bg_chat_avatar"
+        android:fontFamily="monospace"
+        android:gravity="center"
+        android:textColor="@color/chat_avatar_text"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        tools:text="abe0" />
 
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_gravity="start"
-        android:orientation="vertical"
-        android:background="@drawable/bg_message_received"
-        android:paddingHorizontal="12dp"
-        android:paddingVertical="8dp"
-        android:maxWidth="280dp">
+        android:layout_marginStart="8dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
 
+        <!-- Имя отправителя — только для первого сообщения в группе. -->
         <TextView
             android:id="@+id/tv_message_sender"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@color/bubble_sender"
+            android:paddingStart="4dp"
+            android:paddingBottom="2dp"
+            android:paddingEnd="0dp"
+            android:textColor="@color/app_on_surface_muted"
             android:textSize="12sp"
             android:textStyle="bold"
-            android:paddingBottom="2dp" />
+            tools:text="Meshtastic abe0" />
 
-        <TextView
-            android:id="@+id/tv_message_text"
+        <FrameLayout
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/bubble_received_text"
-            android:textSize="15sp" />
+            android:layout_height="wrap_content">
 
-        <TextView
-            android:id="@+id/tv_message_time"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:textColor="@color/bubble_received_time"
-            android:textSize="11sp"
-            android:paddingTop="2dp" />
+            <LinearLayout
+                android:id="@+id/bubble_container"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_bubble_incoming"
+                android:maxWidth="280dp"
+                android:orientation="vertical"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="8dp">
 
+                <TextView
+                    android:id="@+id/tv_message_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/chat_bubble_incoming_text"
+                    android:textSize="15sp"
+                    tools:text="Привет! Это входящее сообщение из mesh-сети." />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingTop="2dp">
+
+                    <TextView
+                        android:id="@+id/tv_message_time"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/chat_bubble_incoming_time"
+                        android:textSize="11sp"
+                        tools:text="14:32" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Hop counter в правом верхнем углу пузыря. -->
+            <LinearLayout
+                android:id="@+id/hops_chip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end|top"
+                android:layout_marginTop="-6dp"
+                android:layout_marginEnd="-6dp"
+                android:background="@drawable/bg_hops_chip"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="2dp"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <ImageView
+                    android:layout_width="10dp"
+                    android:layout_height="10dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_hops"
+                    app:tint="#FFFFFF" />
+
+                <TextView
+                    android:id="@+id/tv_hops"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="3dp"
+                    android:textColor="#FFFFFF"
+                    android:textSize="10sp"
+                    tools:text="2 hops" />
+            </LinearLayout>
+        </FrameLayout>
     </LinearLayout>
-
-</FrameLayout>
+</LinearLayout>

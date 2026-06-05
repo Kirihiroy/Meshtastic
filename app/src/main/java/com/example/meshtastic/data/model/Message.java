@@ -8,12 +8,28 @@ import java.util.UUID;
  * Модель текстового сообщения в mesh-сети.
  */
 public class Message {
+
+    /** Состояние доставки исходящего сообщения. Для входящих не используется. */
+    public enum DeliveryStatus {
+        /** В процессе отправки (ToRadio записан, но onCharacteristicWrite ещё не пришёл). */
+        SENDING,
+        /** Отправлено в радиосеть (ToRadio подтверждён прошивкой). */
+        SENT,
+        /** Доставлено получателю — пришёл Routing ACK. Пока всегда совпадает с SENT
+         *  до реализации обработки want_ack/Routing — направление развития. */
+        DELIVERED,
+        /** Не доставлено за порог времени или write вернул ошибку. */
+        FAILED
+    }
+
     private String id;
     private String text;
     private String senderId; // ID узла отправителя
     private long timestamp;
     private boolean isOwnMessage; // true если сообщение отправлено с этого устройства
     private boolean decryptFailed; // true для E2E-пакетов, которые не удалось расшифровать
+    private int hopsAway = -1;     // hop_start - hop_limit, для входящих из mesh; -1 = неизвестно
+    private DeliveryStatus deliveryStatus = DeliveryStatus.SENT;
 
     public Message() {
         this.timestamp = System.currentTimeMillis();
@@ -76,7 +92,17 @@ public class Message {
     public void setDecryptFailed(boolean decryptFailed) {
         this.decryptFailed = decryptFailed;
     }
-    
+
+    public int getHopsAway() { return hopsAway; }
+    public void setHopsAway(int v) { this.hopsAway = v; }
+
+    public DeliveryStatus getDeliveryStatus() {
+        return deliveryStatus == null ? DeliveryStatus.SENT : deliveryStatus;
+    }
+    public void setDeliveryStatus(DeliveryStatus s) {
+        this.deliveryStatus = s == null ? DeliveryStatus.SENT : s;
+    }
+
     public String getFormattedTime() {
         return new Date(timestamp).toString();
     }
@@ -89,9 +115,11 @@ public class Message {
         return timestamp == that.timestamp
                 && isOwnMessage == that.isOwnMessage
                 && decryptFailed == that.decryptFailed
+                && hopsAway == that.hopsAway
                 && Objects.equals(id, that.id)
                 && Objects.equals(text, that.text)
-                && Objects.equals(senderId, that.senderId);
+                && Objects.equals(senderId, that.senderId)
+                && Objects.equals(deliveryStatus, that.deliveryStatus);
     }
 
     @Override
