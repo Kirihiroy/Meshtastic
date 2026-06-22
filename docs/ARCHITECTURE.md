@@ -18,10 +18,13 @@
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    UI Layer (View)                       │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐│
-│  │Connection│  │  Status  │  │  Nodes   │  │ Settings ││
-│  │ Fragment │  │ Fragment │  │ Fragment │  │ Fragment ││
-│  └──────────┘  └──────────┘  └──────────┘  └──────────┘│
+│  ┌──────────┐ ┌──────┐ ┌──────┐ ┌──────────┐ ┌────────┐│
+│  │Connection│ │Nodes │ │ Chat │ │ E2eDm    │ │Settings││
+│  │ Fragment │ │ Frag │ │ Frag │ │ Fragment │ │ Frag   ││
+│  └──────────┘ └──────┘ └──────┘ └──────────┘ └────────┘│
+│       + 10 sub-fragments под Settings (LoRa, Channels,  │
+│       Security, User, Device, Location, Power, Network, │
+│       Display, Bluetooth)                                │
 └─────────────────────────────────────────────────────────┘
               ↕ LiveData observation
 ┌─────────────────────────────────────────────────────────┐
@@ -56,68 +59,114 @@
 
 ### Фрагменты
 
-#### ConnectionFragment
+#### ConnectionFragment (раздел «Соединение»)
 ```java
-Назначение: Управление BLE подключением
+Назначение: Выбор транспорта и подключение к устройству Meshtastic
+Дизайн: повторяет оригинальный Meshtastic-Android
+
 Ключевые элементы:
-  - scanButton: поиск устройств
-  - connectButton: подключение к выбранному устройству
-  - deviceListText: список найденных устройств
-  - lastRxText: последние входящие байты
+  - connBigIcon + connBigText: большая карточка статуса устройства
+  - connTabBt/Net/Com: segment-control транспортов (только BT функционален)
+  - connDevicesRecycler: список «Сопряжённые устройства» с RadioButton
+  - connActionButton: state-aware кнопка (Сканирование/Остановить/
+                      Подключиться/Подключение…/Отключиться)
+  - connStatusChip: чип статуса внизу
 
 Observe:
-  - repo.getStatusText()
+  - repo.getState()
   - repo.getDevices()
-  - repo.getLastRx()
 
 Actions:
-  - repo.startScan()
-  - repo.stopScan()
-  - repo.connect()
+  - repo.startScan() / stopScan()
+  - repo.selectDevice(d) / connect() / disconnect()
 ```
 
-#### StatusFragment
+> Старый `StatusFragment` удалён. Его метрики перенесены в баннер на
+> экране «Ноды».
+
+#### NodesFragment (раздел «Ноды»)
 ```java
-Назначение: Мониторинг состояния устройства
+Назначение: Список узлов сети + встроенный статус-баннер устройства
+
 Ключевые элементы:
-  - stateText: состояние соединения
-  - statusText: текстовое сообщение
-  - deviceNameText, firmwareText: информация о устройстве
-  - batteryText, snrText: телеметрия
-  - lastRxHexText: сырые данные
-  - lastSummaryText: расшифрованное FromRadio
+  - nodes_header + nodes_counter: «Ноды (онлайн X / показано Y / всего Z)»
+  - nodes_status_banner: цветная точка + статус + RX-время + строка метрик
+                        (клик = repo.requestConfigManual())
+  - nodes_filter + nodes_sort: поле фильтра и кнопка сортировки
+  - nodes_recycler: ListAdapter с DiffUtil
 
-Observe:
-  - repo.getDeviceStatus()
-
-Обновление: автоматическое через LiveData
-```
-
-#### NodesFragment
-```java
-Назначение: Список узлов сети
-Ключевые элементы:
-  - RecyclerView с NodesAdapter
-  - Отображает: имя, ID, батарею, SNR, координаты
+Карточка ноды (item_node.xml):
+  - бейдж short_name (HSV-цвет по nodeNum)
+  - замок PSK, имя, last-seen, иконка MQTT-off
+  - метрики PWR/Batt/ChUtil/AirUtil/Altitude
+  - HW-model, role, !node-id
 
 Observe:
   - repo.getNodes()
-
-Обновление: при получении NODE_INFO от устройства
+  - repo.getDeviceStatus()  ← для баннера
 ```
 
-#### SettingsFragment
+#### ChatFragment (раздел «Чат»)
 ```java
-Назначение: Конфигурация канала и PSK
-Ключевые элементы:
-  - nodeNameEdit, regionEdit: локальные настройки
-  - channelNameEdit, pskEdit: настройки канала
-  - saveButton: сохранить черновик
-  - applyButton: применить на устройство
+Назначение: Общий канал mesh-сети
+Дизайн: пузыри с группировкой по 5 минут, аватары, статус доставки
 
-Actions:
-  - SettingsStore.save() — локальное хранение
-  - repo.applyChannelPsk() — отправка по BLE
+Ключевые элементы:
+  - tvChatSubtitle: «Канал: LongFast · участников: N»
+  - rvMessages: 3 view-type (sent / received / date_header)
+  - btnNewMessages: FAB «↓ N новых» при прокрутке вверх
+  - btnAttach: иконка скрепки (заглушка)
+  - btnSend: круглая зелёная кнопка
+
+Группировка:
+  - GROUP_WINDOW_MS = 5 * 60 * 1000
+  - findLastVisibleItemPosition для определения «у низа ли»
+  - unreadCount накапливается при апдейте если был не у низа
+
+Observe:
+  - repo.getMessages()
+  - repo.getNodes() (для resolve имени отправителя)
+  - repo.getState()
+```
+
+#### E2eDmFragment (раздел «E2E ЛС»)
+```java
+Назначение: Личные сообщения с ECDH+AES-GCM шифрованием
+
+Ключевые элементы:
+  - tvMyPubkey: свой публичный ключ (read-only, копируется)
+  - etRecipientNode: ID получателя (!aabbccdd или число)
+  - etRecipientPubkey: публичный ключ получателя (hex)
+  - etE2eMessage: ввод текста
+  - btnE2eSend: отправка через repo.sendE2eMessage()
+  - rvE2eMessages: лента (использует тот же ChatAdapter)
+
+Observe:
+  - repo.getE2eMessages()
+  - repo.getState()
+```
+
+#### SettingsFragment (раздел «Настройки»)
+```java
+Назначение: Меню из 10 разделов конфигурации
+
+Ключевые элементы:
+  - 10 строк-«entry»: иконка + подпись + шеврон
+  - Каждая открывает sub-фрагмент через
+    FragmentTransaction.replace(R.id.fragment_container, X)
+       .addToBackStack(null)
+
+Sub-фрагменты:
+  LoRaSettingsFragment, ChannelsSettingsFragment + ChannelEditFragment,
+  SecuritySettingsFragment, UserSettingsFragment, DeviceSettingsFragment,
+  LocationSettingsFragment, PowerSettingsFragment,
+  NetworkSettingsFragment, DisplaySettingsFragment,
+  BluetoothSettingsFragment
+
+Persistence:
+  - SettingsStore + SettingsDraft
+  - Раздельные секции loadWithX / saveX — каждый sub-экран пишет только
+    свою подсекцию, чтобы не затирать чужие черновики
 ```
 
 ---
@@ -366,12 +415,58 @@ private void handleFromRadioValue(byte[] value) {
 
 ### SettingsDraft
 ```java
-Назначение: Локальный черновик настроек
+Назначение: Локальный черновик настроек ВСЕХ разделов меню
 Поля:
-  - nodeName: String
-  - region: String
-  - channelName: String
-  - psk: String
+  // User (длинное имя = nodeName)
+  - nodeName, userShortName, userRole, userIsLicensed
+
+  // LoRa
+  - region, loraModemPreset, loraHopLimit, loraTxPower,
+    loraTxEnabled, loraIgnoreMqtt
+
+  // Channels: массив на 8 слотов
+  - ChannelDraft[] channels  (index, name, psk, role)
+
+  // Security
+  - String[] adminKeys (3 слота), isManaged
+
+  // Device
+  - deviceRebroadcastMode, deviceNodeInfoBroadcastSecs,
+    deviceSerialEnabled, deviceDebugLogEnabled,
+    deviceLedHeartbeatDisabled
+
+  // Position
+  - positionGpsMode, positionBroadcastSecs,
+    positionFixedEnabled, positionSmartEnabled
+
+  // Power
+  - powerIsSaving, powerShutdownAfterSecs,
+    powerWaitBluetoothSecs, powerMinWakeSecs
+
+  // Network
+  - networkWifiEnabled, networkWifiSsid, networkWifiPsk,
+    networkNtpServer, networkEthEnabled
+
+  // Display
+  - displayScreenOnSecs, displayUnits, displayFlipScreen,
+    displayUse12hClock, displayHeadingBold
+
+  // Bluetooth
+  - bluetoothEnabled, bluetoothMode, bluetoothFixedPin
+
+Старые getChannelName()/getPsk() делегируют на channels[0]
+для backward compat с MeshConnectionRepository.applyChannelPsk().
+```
+
+### Message
+```java
+Назначение: Текстовое сообщение чата (общий или E2E)
+Поля:
+  - id, text, senderId, timestamp, isOwnMessage
+  - decryptFailed: true для E2E пакетов которые не расшифровались
+  - hopsAway: int (-1 = неизвестно), число ретрансляций
+  - deliveryStatus: enum DeliveryStatus
+                    {SENDING, SENT, DELIVERED, FAILED}
 ```
 
 ---
